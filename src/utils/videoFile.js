@@ -13,26 +13,28 @@
 // on. These are suggestions in the form, not a whitelist: any https link is
 // accepted, because a whitelist would quietly refuse a legitimate video
 // hosted somewhere nobody thought to list.
+import { translate } from '../i18n/i18n.js'
+
 export const SUGGESTED_HOSTS = [
   {
     name: 'Google Drive',
-    hint: 'Upload the file, share it, set sharing to "anyone with the link", then copy the link.',
+    key: 'submit.host.drive',
   },
   {
     name: 'YouTube',
-    hint: 'Upload it as Unlisted. Anyone with the link can watch, but it does not show up in search or on your channel.',
+    key: 'submit.host.youtube',
   },
   {
     name: 'Discord',
-    hint: 'Upload the file to any channel or DM, then right click the attachment and copy its link.',
+    key: 'submit.host.discord',
   },
   {
     name: 'OneDrive',
-    hint: 'Upload it, share it, and copy the sharing link.',
+    key: 'submit.host.onedrive',
   },
   {
     name: 'Google Photos',
-    hint: 'Upload the video, share it with link access, then copy the link.',
+    key: 'submit.host.photos',
   },
 ]
 
@@ -53,7 +55,7 @@ export const PLAYABLE = new Set(['webm', 'mp4'])
 export const normalizeVideoUrl = (value) => {
   const raw = String(value ?? '').trim()
   if (!raw) {
-    return { ok: false, error: 'Paste the link to your video.' }
+    return { ok: false, error: translate('video.pasteTheLink') }
   }
 
   // A bare "drive.google.com/..." is the most common paste, and it is not a URL
@@ -64,15 +66,15 @@ export const normalizeVideoUrl = (value) => {
   try {
     parsed = new URL(withScheme)
   } catch {
-    return { ok: false, error: 'That does not look like a link yet.' }
+    return { ok: false, error: translate('video.notALinkYet') }
   }
 
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-    return { ok: false, error: 'That has to be an http or https link.' }
+    return { ok: false, error: translate('video.httpOnly') }
   }
 
   if (!parsed.hostname.includes('.')) {
-    return { ok: false, error: 'That link looks incomplete.' }
+    return { ok: false, error: translate('video.incomplete') }
   }
 
   return { ok: true, url: parsed.toString() }
@@ -88,6 +90,6 @@ export const getHostLabel = (value) => {
   try {
     return new URL(value).hostname.replace(/^www\./, '')
   } catch {
-    return 'unknown host'
+    return translate('video.unknownHost')
   }
 }

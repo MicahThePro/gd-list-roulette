@@ -6,6 +6,7 @@ import { saveRunToAccount, submitRun } from '../services/submissionService'
 import { hasSavedToAccount, hasSubmitted, markSavedToAccount } from '../utils/submittedRuns'
 import AccountDialog from '../components/AccountDialog'
 import SubmitRunForm from '../components/SubmitRunForm'
+import { useTranslate } from '../i18n/useTranslate.js'
 
 /**
  * The end-of-run panel: sign in to keep the run, then submit it for the board.
@@ -19,6 +20,7 @@ import SubmitRunForm from '../components/SubmitRunForm'
  * question about something they have already decided.
  */
 export default function ResultsPage({ run, runKey, onRestart, auth, onAccountChanged, onSignedOut, isCustomRun = false }) {
+  const { t } = useTranslate()
   // The key the server groups a run under. Passed down rather than derived
   // here, because it has to be the same string the run was recorded under in the
   // local leaderboard: anything recomputed on this render (a fresh Date.now(),
@@ -95,20 +97,20 @@ export default function ResultsPage({ run, runKey, onRestart, auth, onAccountCha
   const handleSaveToAccount = async () => {
     if (isSaving) return
     setIsSaving(true)
-    setSaveState({ state: 'idle', message: 'Saving this run to your account...' })
+    setSaveState({ state: 'idle', message: t('results.savingNow') })
     try {
       await saveRunToAccount(run, Date.now())
       if (runKey) markSavedToAccount(runKey)
       setIsSavedToAccount(true)
       setSaveState({
         state: 'done',
-        message: 'Saved. This run is on your account, so it is here on any device you sign in on.',
+        message: t('results.saved'),
       })
       // Tells the app to re-read the account's runs, so the board on the home
       // screen includes this one without a reload.
       onAccountChanged?.()
     } catch (error) {
-      setSaveState({ state: 'error', message: error?.message ?? 'Could not save this run.' })
+      setSaveState({ state: 'error', message: error?.message ?? t('results.saveFailed') })
     } finally {
       setIsSaving(false)
     }
@@ -133,86 +135,84 @@ export default function ResultsPage({ run, runKey, onRestart, auth, onAccountCha
   return (
     <main className="page-shell results-page">
       <section className="panel results-panel">
-        <p className="eyebrow">Run summary</p>
+        <p className="eyebrow">{t('results.summary')}</p>
         <h2>
           {completed
             ? isUnrankedCustomRun
-              ? 'Custom run cleared'
-              : 'Roulette complete'
+              ? t('results.customRunCleared')
+              : t('results.rouletteComplete')
             : timeUp
-              ? 'Out of time'
+              ? t('results.outOfTime')
               : gaveUp
-                ? 'You gave up'
+                ? t('results.youGaveUp')
                 : run.customRunIncomplete
-                  ? 'Custom run ended'
-                  : 'Run ended'}
+                  ? t('results.customRunEnded')
+                  : t('results.runEnded')}
         </h2>
 
         {isUnrankedCustomRun && (
           <p className="settings-note">
-            This was a custom run. It is not saved to your run history or submitted to a leaderboard.
+            {t('results.customRunNote')}
           </p>
         )}
 
         {run.customRunIncomplete && (
           <p className="validation-message">
-            You reached the end of the creator’s level order without clearing every level.
+            {t('results.customRunIncomplete')}
           </p>
         )}
 
         {timeUp && (
           <p className="validation-message">
-            {run.timeUp === 'level'
-              ? 'You ran out of time on that level, so the run ended there.'
-              : 'You ran out of time for the whole run, so it ended there.'}
+            {run.timeUp === 'level' ? t('results.timeUpLevel') : t('results.timeUpTotal')}
           </p>
         )}
 
-        <p className="results-section-label">Outcome</p>
+        <p className="results-section-label">{t('results.outcome')}</p>
         <div className="stats-grid">
           <div className="stat-card result-card">
-            <span>Final %</span>
+            <span>{t('results.finalPercent')}</span>
             <strong>{finalPercent}%</strong>
           </div>
           <div className="stat-card result-card">
-            <span>Status</span>
+            <span>{t('results.status')}</span>
             <strong>
-              {completed ? 'Cleared' : timeUp ? 'Out of time' : gaveUp ? 'Gave up' : 'Failed'}
+              {completed ? t('results.cleared') : timeUp ? t('results.outOfTime') : gaveUp ? t('results.gaveUp') : t('results.failed')}
             </strong>
           </div>
           <div className="stat-card result-card">
-            <span>Rounds</span>
+            <span>{t('results.rounds')}</span>
             <strong>{run.rounds.length}</strong>
           </div>
         </div>
 
-        <p className="results-section-label">Run details</p>
+        <p className="results-section-label">{t('results.runDetails')}</p>
         <div className="stats-grid">
           <div className="stat-card result-card">
-            <span>Average time / level</span>
+            <span>{t('results.averageTime')}</span>
             <strong>{averageTimeLabel}</strong>
           </div>
           <div className="stat-card result-card">
-            <span>Target</span>
+            <span>{t('results.target')}</span>
             <strong>{run.currentTarget}%</strong>
           </div>
           <div className="stat-card result-card">
-            <span>Skips</span>
+            <span>{t('results.skips')}</span>
             <strong>{run.skippedCount || 0}</strong>
           </div>
           <div className="stat-card result-card">
-            <span>Source</span>
+            <span>{t('results.source')}</span>
             <strong className="stat-value-small">{censorText(run.source)}</strong>
           </div>
         </div>
 
         <p className="results-section-label">
-          {gaveUp ? 'Level you gave up on' : 'Round history'}
+          {gaveUp ? t('results.levelGaveUpOn') : t('results.roundHistory')}
         </p>
 
         <div className="history-list">
           {historyRounds.length === 0 ? (
-            <p>No rounds were completed.</p>
+            <p>{t('results.noRounds')}</p>
           ) : (
             historyRounds.map((round, index) => {
               const isFinal = round.final === true
@@ -221,22 +221,22 @@ export default function ResultsPage({ run, runKey, onRestart, auth, onAccountCha
                 ? finalLevelTimeLabel
                 : (round.elapsedLabel ?? (round.elapsedMs != null ? formatDurationMs(round.elapsedMs) : '--:--'))
               const detail = isFinal
-                ? `${round.level.targetPercent ?? run.currentTarget}% was required`
+                ? t('results.requiredPercent', { target: round.level.targetPercent ?? run.currentTarget })
                 : result === 'timeout'
-                  ? `Ran out of time at ${round.targetPercent ?? run.currentTarget}%`
+                  ? t('results.timedOutAt', { target: round.targetPercent ?? run.currentTarget })
                   : round.achievedPercent == null
-                    ? 'No attempt'
-                    : `${round.achievedPercent}% achieved`
+                    ? t('results.noAttempt')
+                    : t('results.achievedPercent', { achieved: round.achievedPercent })
               const resultLabel =
                 result === 'success'
-                  ? 'Passed'
+                  ? t('results.passed')
                   : result === 'skipped'
-                    ? 'Skipped'
+                    ? t('results.skipped')
                     : result === 'gaveup'
-                      ? 'Gave up'
+                      ? t('results.gaveUp')
                       : result === 'timeout'
-                        ? 'Timed out'
-                        : 'Failed'
+                        ? t('results.timedOut')
+                        : t('results.failed')
 
               return (
                 <div
@@ -247,7 +247,7 @@ export default function ResultsPage({ run, runKey, onRestart, auth, onAccountCha
                     <img
                       className="history-thumb"
                       src={round.level.thumbnail}
-                      alt={`${censorText(round.level.name)} thumbnail`}
+                      alt={t('roulette.thumbnailAlt', { name: censorText(round.level.name) })}
                       loading="lazy"
                     />
                   ) : null}
@@ -276,14 +276,10 @@ export default function ResultsPage({ run, runKey, onRestart, auth, onAccountCha
             {keepDecision === 'pending' ? (
               <>
                 <p>
-                  <strong>Keep this run?</strong> You finished it before signing in, so it was not
-                  saved to anything. You are now signed in as <strong>@{auth.user.username}</strong> —
-                  save it to that account, or leave it unsaved.
+                  <strong>{t('results.keepThisRun')}</strong> {t('results.keepThisRunBody', { username: auth.user.username })}
                 </p>
                 <p className="settings-hint">
-                  Saving puts it on Your runs and on any other device you sign in on. Leaving it
-                  unsaved keeps nothing: it goes when you leave this page, and it is not on any
-                  leaderboard.
+                  {t('results.keepHint')}
                 </p>
                 {saveState.message && (
                   <p className={saveState.state === 'done' ? 'export-status' : 'validation-message'}>
@@ -297,7 +293,7 @@ export default function ResultsPage({ run, runKey, onRestart, auth, onAccountCha
                     onClick={handleKeepRun}
                     disabled={isSaving}
                   >
-                    {isSaving ? 'Saving...' : 'Keep it on my account'}
+                    {isSaving ? t('results.saving') : t('results.keepOnAccount')}
                   </button>
                   <button
                     type="button"
@@ -305,20 +301,18 @@ export default function ResultsPage({ run, runKey, onRestart, auth, onAccountCha
                     onClick={handleDiscardRun}
                     disabled={isSaving}
                   >
-                    Don't save it
+                    {t('results.dontSave')}
                   </button>
                 </div>
               </>
             ) : isSavedToAccount ? (
               <p className="export-status">
-                This run is on your account as <strong>@{auth.user.username}</strong>. It appears on
-                your board here and on any other device you sign in on.
+                {t('results.onAccountAs', { username: auth.user.username })}
               </p>
             ) : keepDecision === 'discarded' ? (
               <>
                 <p>
-                  This run is not saved. It was never written anywhere, so there is nothing on this
-                  device holding it and nothing on your account.
+                  {t('results.notSaved')}
                 </p>
                 <div className="action-row">
                   <button
@@ -326,7 +320,7 @@ export default function ResultsPage({ run, runKey, onRestart, auth, onAccountCha
                     className="secondary-button"
                     onClick={() => setKeepDecision('idle')}
                   >
-                    Changed your mind — save it
+                    {t('results.changedMind')}
                   </button>
                 </div>
               </>
@@ -337,21 +331,17 @@ export default function ResultsPage({ run, runKey, onRestart, auth, onAccountCha
         {!isUnrankedCustomRun && !auth.user ? (
           <>
             <p>
-              <strong>Sign in to save this run.</strong> Runs are saved to an account, so signing
-              in on another device means everything you have played is there, instead of only in
-              this browser.
+              <strong>{t('results.signInToSave')}</strong> {t('results.signInToSaveBody')}
             </p>
             <p className="settings-hint">
-              You can sign in or create an account right here, and then you will be asked whether
-              to keep this run. Until you do, it is not saved anywhere — it is not on your board,
-              and it is not on the global leaderboard either.
+              {t('results.signInHint')}
             </p>
           </>
         ) : null}
 
         {!isUnrankedCustomRun && (
           <>
-            <p className="results-section-label">Global leaderboard</p>
+            <p className="results-section-label">{t('results.globalLeaderboard')}</p>
             <div className="submit-panel">
               <SubmitRunForm
                 auth={auth}
@@ -379,7 +369,7 @@ export default function ResultsPage({ run, runKey, onRestart, auth, onAccountCha
             control rather than becoming the save button. */}
         <div className="action-row">
           <button className="secondary-button" type="button" onClick={onRestart}>
-            {isUnrankedCustomRun ? 'Back to custom run' : 'Discard and go home'}
+            {isUnrankedCustomRun ? t('results.backToCustomRun') : t('results.discardAndGoHome')}
           </button>
           {!isUnrankedCustomRun && auth.user ? (
             keepDecision !== 'pending' &&
@@ -391,12 +381,12 @@ export default function ResultsPage({ run, runKey, onRestart, auth, onAccountCha
                 onClick={handleSaveToAccount}
                 disabled={isSaving}
               >
-                {isSaving ? 'Saving...' : `Save run to @${auth.user.username}`}
+                {isSaving ? t('results.saving') : t('results.saveRunTo', { username: auth.user.username })}
               </button>
             )
           ) : !isUnrankedCustomRun ? (
             <button className="primary-button" type="button" onClick={() => setIsAccountOpen(true)}>
-              Sign in or create an account
+              {t('results.signInOrCreate')}
             </button>
           ) : null}
         </div>

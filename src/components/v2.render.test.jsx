@@ -116,11 +116,9 @@ console.log('AccountDialog')
    * text itself, read out of the source, which is the part that would go stale: the
    * sentence a player reads is the claim being made, and a reworded rule that drops
    * one half of it should fail here. */
-  const dialogSource = readFileSync(new URL('./AccountDialog.jsx', import.meta.url), 'utf8')
-  // Matched against the source with whitespace collapsed, because the sentence is
-  // wrapped across lines in the JSX and a plain substring test would fail on a
-  // rewrap rather than on a reword -- which is the change this is meant to catch.
-  const dialogText = dialogSource.replace(/\s+/g, ' ')
+  // The sentence lives in the English catalogue now, which is what the dialog
+  // renders. Whitespace is collapsed because the sentence is wrapped across lines.
+  const dialogText = readFileSync(new URL('../i18n/locales/en.js', import.meta.url), 'utf8').replace(/\s+/g, ' ')
   check('the sign-up form says the username is lowercase', /always lowercase/i.test(dialogText))
   check('the sign-up form says the display name keeps its capitalisation', /keeps the capitalisation/i.test(dialogText))
   check(
@@ -176,7 +174,7 @@ console.log('AccountDialog')
   check('the edit is offered while the limit runs', justChanged.includes('Change display name'))
   check('the countdown sits where the edit was made', justChanged.includes('available again in'))
   check('the button is genuinely disabled, not merely ignored', /<button[^>]*disabled[^>]*>Change display name/.test(justChanged))
-  check('the countdown is rendered as a live figure, not a placeholder', /available again in <strong>\d/.test(justChanged), justChanged.slice(justChanged.indexOf('available again in'), justChanged.indexOf('available again in') + 60))
+  check('the countdown is rendered as a live figure, not a placeholder', /available again in \d+h \d+m \d+s/.test(justChanged) && !justChanged.includes('{time}'), justChanged.slice(justChanged.indexOf('available again in'), justChanged.indexOf('available again in') + 60))
 
   /* A limit that has just expired must read as open. Date.now() past the window is
    * the case a player hits when they leave the tab open across the deadline, and
@@ -220,7 +218,7 @@ console.log('AccountDialog')
     <AccountDialog isOpen onClose={() => {}} auth={signedOut} pendingRun={{ rounds: [] }} />,
   )
   check('with a run in hand the saving is stated', withRun.includes('is saved to'))
-  check('and named against the account being typed', withRun.includes('<strong>@your account</strong>'))
+  check('and named against the account being typed', withRun.includes('@your account'))
   // The bug was a question the player could answer no to, and the run then living
   // only on the device. There is no control to untick at all.
   check('and there is no longer a question to answer about it', !withRun.includes('Put the run I just finished'))
@@ -305,18 +303,18 @@ console.log('Changelog, and playing an old version')
    * and that the one before it is playable, not merely that "the first entry" is
    * first. A changelog that grows is the normal case, and a test that only holds
    * while the list is the length it is today stops being a test. */
-  check('v2.6 is the live version', CHANGELOG[0].version === 'v2.6', CHANGELOG[0].version)
+  check('v2.7 is the live version', CHANGELOG[0].version === 'v2.7', CHANGELOG[0].version)
   // Matched on the heading and the version alone rather than on the whole phrase,
   // because the apostrophe in "What's new" is a curly one in the component. Testing
   // the exact string would make this check fail over typography, and fixing it
   // would mean editing the check every time the apostrophe changed.
   check(
     'the heading names the live version',
-    dialog.includes('What') && dialog.includes('new in v2.6'),
+    dialog.includes('What') && dialog.includes('new in v2.7'),
     LATEST_VERSION,
   )
-  check('v2.5 is playable as the previous release', isPlayable('v2.5'))
-  check('v2.5 has a play link', dialog.includes(versionUrl('v2.5')), versionUrl('v2.5'))
+  check('v2.6 is playable as the previous release', isPlayable('v2.6'))
+  check('v2.6 has a play link', dialog.includes(versionUrl('v2.6')), versionUrl('v2.6'))
 
   check('v2.4 is in the changelog', CHANGELOG.some((release) => release.version === 'v2.4'))
   check('v2.4 is playable', isPlayable('v2.4'))
