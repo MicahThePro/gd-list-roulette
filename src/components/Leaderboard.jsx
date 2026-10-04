@@ -9,23 +9,11 @@ import { hasSubmitted } from '../utils/submittedRuns'
 import PointercratePartsBadge from './PointercratePartsBadge'
 import { POINTERCRATE_PARTS, pointercratePartsLabel } from '../services/pointercrateParts.js'
 import SubmitRunForm from './SubmitRunForm'
+import { useTranslate } from '../i18n/useTranslate.js'
+import { translate } from '../i18n/i18n.js'
+import { RESULT_LABEL_KEYS, statusLabel } from '../utils/statusLabel.js'
 
 const POINTERCRATE_SOURCE = 'Pointercrate Demon List'
-
-const STATUS_LABELS = {
-  completed: 'Cleared',
-  gaveup: 'Gave up',
-  failed: 'Failed',
-}
-
-const RESULT_LABELS = {
-  success: 'Passed',
-  skipped: 'Skipped',
-  failure: 'Failed',
-  gaveup: 'Gave up',
-  // A round the clock ran out on, rather than one the player ended.
-  timeout: 'Timed out',
-}
 
 const formatWhen = (timestamp) => {
   if (!Number.isFinite(timestamp)) return 'Unknown date'
@@ -44,6 +32,7 @@ const formatWhen = (timestamp) => {
 }
 
 const RunDetail = ({ entry, onClose, onRequestDelete, auth }) => {
+  const { t } = useTranslate()
   const totalTime = entry.totalMs ? formatDurationMs(entry.totalMs) : '--:--'
   const avgTime = entry.avgMs ? formatDurationMs(entry.avgMs) : '--:--'
   // Re-read whenever the entry or the user changes, so signing in or submitting
@@ -64,12 +53,12 @@ const RunDetail = ({ entry, onClose, onRequestDelete, auth }) => {
     <div className="lb-detail">
       <div className="lb-detail-head">
         <button type="button" className="lb-back" onClick={onClose}>
-          &larr; Back
+          {t('board.back')}
         </button>
         <div className="lb-detail-title">
           <strong>{censorText(entry.source)}</strong>
           <span>
-            {formatWhen(entry.at)} &middot; step +{entry.step}% &middot; {entry.roundsPlayed} levels
+            {t('board.detailMeta', { date: formatWhen(entry.at), step: entry.step, rounds: entry.roundsPlayed })}
           </span>
           {/* Repeated here as well as on the row, because the detail view is where
               somebody goes to check exactly what a run was played from. */}
@@ -83,33 +72,33 @@ const RunDetail = ({ entry, onClose, onRequestDelete, auth }) => {
             onClose()
           }}
         >
-          Delete
+          {t('board.delete')}
         </button>
       </div>
 
       <div className="stats-grid">
         <div className="stat-card result-card">
-          <span>Outcome</span>
-          <strong className="stat-value-small">{STATUS_LABELS[entry.status] ?? entry.status}</strong>
+          <span>{t('board.outcome')}</span>
+          <strong className="stat-value-small">{statusLabel(t, entry.status)}</strong>
         </div>
         <div className="stat-card result-card">
-          <span>Reached</span>
+          <span>{t('board.reached')}</span>
           <strong>{entry.score}%</strong>
         </div>
         <div className="stat-card result-card">
-          <span>Total time</span>
+          <span>{t('board.totalTime')}</span>
           <strong className="stat-value-small">{totalTime}</strong>
         </div>
         <div className="stat-card result-card">
-          <span>Avg / level</span>
+          <span>{t('board.avgPerLevel')}</span>
           <strong className="stat-value-small">{avgTime}</strong>
         </div>
         <div className="stat-card result-card">
-          <span>Passed</span>
+          <span>{t('board.passed')}</span>
           <strong>{entry.passed}</strong>
         </div>
         <div className="stat-card result-card">
-          <span>Skips</span>
+          <span>{t('board.skips')}</span>
           <strong>{entry.skipped}</strong>
         </div>
       </div>
@@ -119,11 +108,11 @@ const RunDetail = ({ entry, onClose, onRequestDelete, auth }) => {
           have nothing to say here. */}
       {skipBreakdown.length > 0 && (
         <div className="skip-breakdown">
-          <p className="results-section-label">Why levels were skipped</p>
+          <p className="results-section-label">{t('board.whySkipped')}</p>
           <div className="skip-reason-chips">
             {skipBreakdown.map((reason) => (
               <span key={reason.id} className="skip-reason-chip">
-                {reason.label}
+                {getSkipReasonLabel(reason.id)}
                 <span className="skip-reason-chip-count">{reason.count}</span>
               </span>
             ))}
@@ -131,10 +120,10 @@ const RunDetail = ({ entry, onClose, onRequestDelete, auth }) => {
         </div>
       )}
 
-      <p className="results-section-label">Levels</p>
+      <p className="results-section-label">{t('board.levels')}</p>
       <div className="history-list">
         {entry.rounds.length === 0 ? (
-          <p>No levels were played in this run.</p>
+          <p>{t('board.noLevelsPlayed')}</p>
         ) : (
           entry.rounds.map((packed, index) => {
             const round = unpackRound(packed)
@@ -153,18 +142,22 @@ const RunDetail = ({ entry, onClose, onRequestDelete, auth }) => {
                   <strong title={censorText(round.name)}>{censorText(round.name)}</strong>
                   <small>
                     {round.result === 'gaveup'
-                      ? `${round.target}% was required`
+                      ? t('board.requiredPercent', { target: round.target })
                       : round.result === 'timeout'
-                        ? `Ran out of time at ${round.target}%`
+                        ? t('board.timedOutAt', { target: round.target })
                         : round.result === 'skipped'
-                          ? `Skipped${round.skipReason ? ` • ${getSkipReasonLabel(round.skipReason)}` : ''}`
+                          ? t('board.skippedLine', {
+                              reason: round.skipReason
+                                ? t('roulette.skipReasonSeparator') + getSkipReasonLabel(round.skipReason)
+                                : '',
+                            })
                           : round.achieved == null
-                            ? 'No attempt'
-                            : `${round.achieved}% achieved`}
+                            ? t('results.noAttempt')
+                            : t('board.achievedPercent', { achieved: round.achieved })}
                   </small>
                 </span>
                 <em className={`history-result history-result-${round.result}`}>
-                  {RESULT_LABELS[round.result] ?? round.result}
+                  {t(RESULT_LABEL_KEYS[round.result] ?? 'results.failed')}
                 </em>
                 <small className="history-time">
                   {Number.isFinite(round.ms) ? formatDurationMs(round.ms) : '--:--'}
@@ -179,7 +172,7 @@ const RunDetail = ({ entry, onClose, onRequestDelete, auth }) => {
           finished with can be sent to the global leaderboard later without
           replaying it. `getPayload` posts this entry rather than a live run,
           which is the only thing the two entry points do differently. */}
-      <p className="results-section-label">Global leaderboard</p>
+      <p className="results-section-label">{t('board.globalLeaderboard')}</p>
       <div className="submit-panel">
         <SubmitRunForm
           auth={auth}
@@ -188,12 +181,7 @@ const RunDetail = ({ entry, onClose, onRequestDelete, auth }) => {
           runKey={entry.id}
           getPayload={() => submitEntry(entry)}
           onSubmitted={() => setIsSubmitted(true)}
-          intro={
-            <>
-              Submit this run to the global leaderboard as{' '}
-              <strong>@{auth?.user?.username}</strong>, using the link to a video of it.
-            </>
-          }
+          intro={t('board.submitIntro', { username: auth?.user?.username })}
         />
       </div>
     </div>
@@ -204,9 +192,9 @@ const RunDetail = ({ entry, onClose, onRequestDelete, auth }) => {
    get no filters. Gave-up and failed runs have several comparable numbers, so
    those tabs can be sorted. */
 const SORT_FILTERS = [
-  { key: 'score', label: 'Highest %', compare: (a, b) => b.score - a.score },
-  { key: 'levels', label: 'Most levels', compare: (a, b) => b.roundsPlayed - a.roundsPlayed },
-  { key: 'newest', label: 'Newest', compare: (a, b) => b.at - a.at },
+  { key: 'score', labelKey: 'board.sortHighest', compare: (a, b) => b.score - a.score },
+  { key: 'levels', labelKey: 'board.sortMostLevels', compare: (a, b) => b.roundsPlayed - a.roundsPlayed },
+  { key: 'newest', labelKey: 'board.sortNewest', compare: (a, b) => b.at - a.at },
 ]
 const FILTERS = {
   gaveup: SORT_FILTERS,
@@ -225,13 +213,16 @@ const FILTERS = {
    it. The tabs are built to cover every entry rather than to divide the
    interesting ones, so the tab counts always add up to the total. */
 const TABS = [
-  { key: 'cleared', label: 'Succeeded', statuses: ['completed'], filters: [] },
-  { key: 'gaveup', label: 'Gave up', statuses: ['gaveup'], filters: FILTERS.gaveup },
-  { key: 'failed', label: 'Failed', statuses: ['failed'], filters: FILTERS.failed },
+  { key: 'cleared', labelKey: 'board.tabCleared', statuses: ['completed'], filters: [] },
+  { key: 'gaveup', labelKey: 'board.tabGaveUp', statuses: ['gaveup'], filters: FILTERS.gaveup },
+  { key: 'failed', labelKey: 'board.tabFailed', statuses: ['failed'], filters: FILTERS.failed },
 ]
 
+/* The list names themselves stay as their own authors wrote them -- they are
+ * somebody else's words and are also the values runs are stored under -- so only
+ * the "All lists" entry above them is site copy. */
 const SOURCES = [
-  { id: 'all', label: 'All lists' },
+  { id: 'all', labelKey: 'board.allLists' },
   ...Object.values(LIST_SOURCES).map((name) => ({
     id: name,
     label: censorText(LIST_SOURCE_LABELS[name] ?? name),
@@ -239,12 +230,13 @@ const SOURCES = [
 ]
 
 const EMPTY_TAB_MESSAGES = {
-  cleared: 'No cleared runs yet. Hit a 100% level to make this list.',
-  gaveup: 'No runs given up yet.',
-  failed: 'No failed runs yet. Missing a target ends a run, and that is recorded here.',
+  cleared: 'board.emptyCleared',
+  gaveup: 'board.emptyGaveUp',
+  failed: 'board.emptyFailed',
 }
 
 export default function Leaderboard({ entries, onDelete, auth }) {
+  const { t } = useTranslate()
   const [tab, setTab] = useState('cleared')
   const [filter, setFilter] = useState(FILTERS.gaveup[0].key)
   const [source, setSource] = useState('all')
@@ -280,7 +272,7 @@ export default function Leaderboard({ entries, onDelete, auth }) {
     if (unlisted.length) {
       built.push({
         key: 'other',
-        label: 'Other',
+        labelKey: 'board.tabOther',
         items: unlisted,
         filters: SORT_FILTERS,
         isFallback: true,
@@ -380,25 +372,27 @@ export default function Leaderboard({ entries, onDelete, auth }) {
             className={t.key === tab ? 'lb-tab lb-tab-active' : 'lb-tab'}
             onClick={() => setTab(t.key)}
           >
-            {t.label}
+            {/* `translate` rather than the hook's `t`: the map variable here is
+                named t and shadows it, exactly as it did before this was translated. */}
+            {t.labelKey ? translate(t.labelKey) : t.label}
             <span className="lb-tab-count">{t.items.length}</span>
           </button>
         ))}
       </div>
 
       <label className="global-board-source">
-        <span className="visually-hidden">Filter by list</span>
+        <span className="visually-hidden">{t('board.filterByList')}</span>
         <select value={source} onChange={(event) => handleSourceChange(event.target.value)}>
           {SOURCES.map((entry) => (
             <option key={entry.id} value={entry.id}>
-              {entry.label}
+              {entry.labelKey ? t(entry.labelKey) : entry.label}
             </option>
           ))}
         </select>
       </label>
 
       {activeFilters.length > 0 && activeTab.items.length > 0 && (
-        <div className="lb-filters" role="group" aria-label="Sort runs">
+        <div className="lb-filters" role="group" aria-label={t('board.sortRuns')}>
           {activeFilters.map((f) => (
             <button
               key={f.key}
@@ -407,7 +401,7 @@ export default function Leaderboard({ entries, onDelete, auth }) {
               aria-pressed={f.key === activeFilter?.key}
               onClick={() => setFilter(f.key)}
             >
-              {f.label}
+              {t(f.labelKey)}
             </button>
           ))}
         </div>
@@ -417,14 +411,14 @@ export default function Leaderboard({ entries, onDelete, auth }) {
         /* Its own class rather than a second `.lb-filters`: the grid has one
            `filters` area, and two children in one named area are placed into the
            same cell, which painted these chips on top of the sort chips. */
-        <div className="lb-part-filters" role="group" aria-label="Filter by Pointercrate list">
+        <div className="lb-part-filters" role="group" aria-label={t('board.filterByPointercrate')}>
           <button
             type="button"
             className={parts === '' ? 'lb-filter lb-filter-active' : 'lb-filter'}
             aria-pressed={parts === ''}
             onClick={() => setParts('')}
           >
-            All lists
+            {t('board.allLists')}
           </button>
           {POINTERCRATE_PARTS.map((part) => (
             <button
@@ -434,7 +428,7 @@ export default function Leaderboard({ entries, onDelete, auth }) {
               aria-pressed={parts === part.id}
               onClick={() => setParts(parts === part.id ? '' : part.id)}
             >
-              {part.label} only
+              {t('board.partOnly', { part: part.label })}
             </button>
           ))}
         </div>
@@ -447,10 +441,10 @@ export default function Leaderboard({ entries, onDelete, auth }) {
               the account that is simply false -- there are cleared runs, they are
               just not the ones being asked for. */}
           {parts
-            ? `No ${POINTERCRATE_PARTS.find((p) => p.id === parts)?.label ?? parts} runs on this tab.`
+            ? t('board.emptyPart', { part: POINTERCRATE_PARTS.find((p) => p.id === parts)?.label ?? parts })
             : entries.length === 0
-              ? 'No runs yet. Hit a 100% level to make this list, or sign in to pick up the runs saved on your account.'
-              : (EMPTY_TAB_MESSAGES[activeTab.key] ?? 'Nothing in this list yet.')}
+              ? t('board.emptyAny')
+              : t(EMPTY_TAB_MESSAGES[activeTab.key] ?? 'board.emptyGeneric')}
         </p>
       ) : (
         <div className="lb-list">
@@ -461,19 +455,19 @@ export default function Leaderboard({ entries, onDelete, auth }) {
                 <span className="lb-top">
                   <strong>{entry.score}%</strong>
                   <em className={`lb-status lb-status-${entry.status}`}>
-                    {STATUS_LABELS[entry.status] ?? entry.status}
+                    {statusLabel(t, entry.status)}
                   </em>
                 </span>
                 <span className="lb-sub">
-                  {censorText(entry.source)} &middot; step +{entry.step}% &middot; {entry.roundsPlayed} levels
+                  {t('board.rowMeta', { source: censorText(entry.source), step: entry.step, rounds: entry.roundsPlayed })}
                   {/* The parts, inline rather than as a pill in the top row: this
                       sub-line is already the "what was this run" line, and a pill
                       above it would pull the eye away from the score. */}
                   {pointercratePartsLabel(entry.pointercrateParts) &&
                     ` · Pointercrate ${pointercratePartsLabel(entry.pointercrateParts)}`}
-                  {entry.passed > 0 && ` · ${entry.passed} passed`}
-                  {entry.skipped > 0 && ` · ${entry.skipped} skipped`}
-                  {entry.avgMs ? ` · avg ${formatDurationMs(entry.avgMs)}` : ''}
+                  {entry.passed > 0 && t('board.rowPassed', { count: entry.passed })}
+                  {entry.skipped > 0 && t('board.rowSkipped', { count: entry.skipped })}
+                  {entry.avgMs ? t('board.rowAvg', { time: formatDurationMs(entry.avgMs) }) : ''}
                 </span>
                 <span className="lb-when">{formatWhen(entry.at)}</span>
               </button>
@@ -481,9 +475,9 @@ export default function Leaderboard({ entries, onDelete, auth }) {
                 type="button"
                 className="lb-delete"
                 onClick={() => requestDelete(entry)}
-                aria-label="Delete run"
+                aria-label={t('board.deleteRun')}
               >
-                Delete
+                {t('board.delete')}
               </button>
             </div>
           ))}
@@ -492,7 +486,7 @@ export default function Leaderboard({ entries, onDelete, auth }) {
 
       {entries.length > 0 && (
         <p className="lb-note">
-          {entries.length} of {MAX_ENTRIES} runs stored. Older runs keep fewer levels.
+          {t('board.storedNote', { count: entries.length, max: MAX_ENTRIES })}
         </p>
       )}
 
@@ -523,12 +517,8 @@ export default function Leaderboard({ entries, onDelete, auth }) {
             aria-labelledby="delete-ranked-title"
             onClick={(event) => event.stopPropagation()}
           >
-            <h2 id="delete-ranked-title">Remove this run from the leaderboard?</h2>
-            <p>
-              This run is on the global leaderboard. Deleting it removes it from
-              there as well as from your own board, and it cannot be put back or
-              submitted again.
-            </p>
+            <h2 id="delete-ranked-title">{t('board.deleteRankedTitle')}</h2>
+            <p>{t('board.deleteRankedBody')}</p>
             <div className="modal-actions">
               <button
                 className="secondary-button"
@@ -536,14 +526,14 @@ export default function Leaderboard({ entries, onDelete, auth }) {
                 onClick={() => setPendingDeleteId(null)}
                 autoFocus
               >
-                Keep the run
+                {t('board.keepRun')}
               </button>
               <button
                 className="danger-button"
                 type="button"
                 onClick={confirmDelete}
               >
-                Delete from leaderboard
+                {t('board.deleteFromLeaderboard')}
               </button>
             </div>
           </div>

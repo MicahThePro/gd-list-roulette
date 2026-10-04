@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { PING_INTERVAL_MS, pingWorker } from '../services/pingService.js'
+import { useTranslate } from '../i18n/useTranslate.js'
 
 /**
  * The signal symbol beside the site title.
@@ -24,7 +25,10 @@ const BARS = [1, 2, 3]
 const STATE_FILL = { good: 3, slow: 2, none: 1 }
 
 const WorkerSignal = () => {
-  const [result, setResult] = useState({ status: 'unknown', ms: null, detail: 'Measuring...' })
+  const { t } = useTranslate()
+  // The initial detail is translated on each render rather than stored, so it is
+  // already right on the very first paint in whatever language is chosen.
+  const [result, setResult] = useState({ status: 'unknown', ms: null, detail: '' })
 
   useEffect(() => {
     /* The controller is kept for the whole mount, so a ping in flight is
@@ -55,7 +59,7 @@ const WorkerSignal = () => {
       } catch (error) {
         // Only an abort reaches here; a failed ping is a state, not a throw.
         if (!cancelled && error?.name !== 'AbortError') {
-          setResult({ status: 'none', ms: null, detail: 'Worker unreachable' })
+          setResult({ status: 'none', ms: null, detail: t('signal.unreachable') })
         }
       } finally {
         inFlight = false
@@ -79,16 +83,16 @@ const WorkerSignal = () => {
       document.removeEventListener('visibilitychange', onVisible)
       controller.abort()
     }
-  }, [])
+  }, [t])
 
   const fill = STATE_FILL[result.status] ?? 0
 
   const label =
     result.status === 'unknown'
-      ? 'Checking the connection to the Worker'
+      ? t('signal.checking')
       : result.status === 'none'
-        ? `No connection to the Worker (${result.detail})`
-        : `Worker connected in ${result.ms} ms${result.status === 'slow' ? ' - slow' : ''}`
+        ? t('signal.noConnection', { detail: result.detail || t('signal.unreachable') })
+        : `${t('signal.connected', { ms: result.ms })}${result.status === 'slow' ? t('signal.slow') : ''}`
 
   return (
     <span className={`worker-signal worker-signal-${result.status}`} title={label} aria-label={label} role="img">
@@ -97,7 +101,9 @@ const WorkerSignal = () => {
           <span key={bar} className={bar <= fill ? 'lit' : ''} style={{ height: `${bar * 5 + 3}px` }} />
         ))}
       </span>
-      <span className="worker-signal-text">{result.status === 'none' ? 'offline' : result.status === 'unknown' ? '...' : `${result.ms} ms`}</span>
+      <span className="worker-signal-text">
+        {result.status === 'none' ? t('signal.offline') : result.status === 'unknown' ? '...' : `${result.ms} ms`}
+      </span>
     </span>
   )
 }

@@ -5,6 +5,7 @@ import AccountDialog from '../components/AccountDialog'
 import WorkerSignal from '../components/WorkerSignal'
 import ChangelogDialog from '../components/ChangelogDialog'
 import SettingsDialog from '../components/SettingsDialog'
+import LanguagePicker from '../components/LanguagePicker'
 import CustomRunBuilder from '../components/CustomRunBuilder'
 import { fetchAredlListBounds, fetchChallengeListBounds, fetchGslListBounds, fetchImpossibleLevelsBounds, LIST_SOURCES } from '../services/listService'
 import { usePersistentPercentStep } from '../hooks/usePersistentPercentStep'
@@ -13,6 +14,8 @@ import { SITE_NAME, LATEST_VERSION } from '../data/changelog'
 import { usePointercrateParts } from '../hooks/usePointercrateParts'
 import { POINTERCRATE_PARTS } from '../services/pointercrateParts.js'
 import { censorText } from '../utils/censor'
+import { translate } from '../i18n/i18n.js'
+import { useTranslate } from '../i18n/useTranslate.js'
 
 const CHALLENGE_LIST_SOURCE = 'challengelist'
 const IMPOSSIBLE_LEVELS_SOURCE = 'impossiblelevels'
@@ -50,6 +53,7 @@ const getBoundsForSource = (sourceName) => {
 }
 
 export default function HomePage({ onStart, onOpenCustomRun, history, gameRules, isMasked, onIsMaskedChange, auth }) {
+  const { t } = useTranslate()
   const [isLoading, setIsLoading] = useState(false)
   const [isBoardOpen, setIsBoardOpen] = useState(false)
   // The board view has two halves: what this browser has played, and what
@@ -253,7 +257,7 @@ export default function HomePage({ onStart, onOpenCustomRun, history, gameRules,
      the same thing, and clearing it on the next attempt means a delete that works
      takes the complaint away with it. */
   const reportBoardError = (error) => {
-    setBoardError(error?.message ?? 'Could not delete that run. It is still here.')
+    setBoardError(error?.message ?? t('home.deleteRunFailed'))
   }
 
   return (
@@ -266,15 +270,15 @@ export default function HomePage({ onStart, onOpenCustomRun, history, gameRules,
         <section className="panel board-page">
           <header className="board-page-bar">
             <div>
-              <p className="eyebrow">Runs</p>
-              <h2>Leaderboards</h2>
+              <p className="eyebrow">{t('home.eyebrowRuns')}</p>
+              <h2>{t('home.leaderboards')}</h2>
             </div>
             <button
               type="button"
               className="secondary-button"
               onClick={() => setIsBoardOpen(false)}
             >
-              Back
+              {t('common.back')}
             </button>
           </header>
 
@@ -295,7 +299,7 @@ export default function HomePage({ onStart, onOpenCustomRun, history, gameRules,
                 board, so a strip offering a choice that is not really there would
                 be decoration pretending to be a control. */}
             {hasAccount && (
-              <div className="board-view-tabs" role="tablist" aria-label="Leaderboard">
+              <div className="board-view-tabs" role="tablist" aria-label={t('board.leaderboardAria')}>
                 <button
                   type="button"
                   role="tab"
@@ -303,7 +307,7 @@ export default function HomePage({ onStart, onOpenCustomRun, history, gameRules,
                   className={activeTab === 'mine' ? 'board-view-tab board-view-tab-active' : 'board-view-tab'}
                   onClick={() => setBoardTab('mine')}
                 >
-                  Your runs
+                  {t('home.yourRuns')}
                   {history.entries.length > 0 && (
                     <span className="lb-badge">{history.entries.length}</span>
                   )}
@@ -315,7 +319,7 @@ export default function HomePage({ onStart, onOpenCustomRun, history, gameRules,
                   className={activeTab === 'global' ? 'board-view-tab board-view-tab-active' : 'board-view-tab'}
                   onClick={() => setBoardTab('global')}
                 >
-                  Global
+                  {t('home.global')}
                 </button>
               </div>
             )}
@@ -326,8 +330,7 @@ export default function HomePage({ onStart, onOpenCustomRun, history, gameRules,
                  will look for their own runs, and "nothing here" reads as lost
                  data unless it is explained. */
               <p className="settings-note board-signed-out-note">
-                Sign in to see your own runs. Runs are saved to an account, so a signed out player
-                has no personal board -- there would be nothing on it.
+                {t('home.boardSignedOut')}
               </p>
           )}
 
@@ -351,18 +354,14 @@ export default function HomePage({ onStart, onOpenCustomRun, history, gameRules,
       ) : (
       <section className="panel hero-panel">
         <header className="hero-copy">
-          <p className="eyebrow">Geometry Dash Challenge</p>
+          <p className="eyebrow">{t('home.eyebrow')}</p>
           <h1>
             {SITE_NAME}
             <span className="hero-version">{LATEST_VERSION}</span>
             <WorkerSignal />
           </h1>
           <p className="lead">
-            GD List Roulette is a Geometry Dash challenge. You get a random level from a chosen list and
-            have to hit the target percentage on it. Clear it and the target goes up by your chosen step
-            on a brand new random level. Miss it and the run is over. Starting at 1% and climbing in
-            steps, the run ends the moment you clear a 100% level. Pick a bigger step in settings to
-            make it harder, or limit it to a rank range for an even tougher draw.
+            {t('home.lead')}
           </p>
         </header>
 
@@ -376,7 +375,7 @@ export default function HomePage({ onStart, onOpenCustomRun, history, gameRules,
               onClick={() => setIsSettingsOpen(true)}
               aria-expanded={isSettingsOpen}
             >
-              Settings
+              {t('home.settings')}
             </button>
             <button
               type="button"
@@ -384,7 +383,7 @@ export default function HomePage({ onStart, onOpenCustomRun, history, gameRules,
               onClick={() => setIsBoardOpen((open) => !open)}
               aria-expanded={isBoardOpen}
             >
-              {isBoardOpen ? 'Hide leaderboard' : 'Leaderboard'}
+              {isBoardOpen ? t('home.hideLeaderboard') : t('home.leaderboard')}
               {/* The count is the account's runs, so it is only shown to somebody
                   signed in who can actually open the board it counts. */}
               {hasAccount && history.entries.length > 0 && (
@@ -396,7 +395,7 @@ export default function HomePage({ onStart, onOpenCustomRun, history, gameRules,
               className="secondary-button small-button"
               onClick={() => setIsChangelogOpen(true)}
             >
-              What's new
+              {t('home.whatsNew')}
             </button>
             <button
               type="button"
@@ -406,26 +405,26 @@ export default function HomePage({ onStart, onOpenCustomRun, history, gameRules,
                 else setIsAccountOpen(true)
               }}
             >
-              Create a run for others
+              {t('home.createRun')}
             </button>
             <button
               type="button"
               className="secondary-button small-button"
               onClick={() => setIsAccountOpen(true)}
             >
-              {auth.user ? auth.user.displayName : 'Sign in'}
+              {auth.user ? auth.user.displayName : t('home.signIn')}
             </button>
             <span className="settings-summary">
-              Step: +{percentStep}% ({estimatedRounds} levels to finish)
+              {t('home.stepSummary', { step: percentStep, rounds: estimatedRounds })}
               {/* Best score is read off the account's runs, so signed out there is
                   no best to report -- and showing a bare "Best 0%" would read as a
                   claim that the player has done nothing. */}
-              {hasAccount && history.entries.length > 0 && ` · Best ${history.bestScore}%`}
+              {hasAccount && history.entries.length > 0 && t('home.best', { score: history.bestScore })}
             </span>
           </div>
 
           <label>
-            List source
+            {t('home.listSource')}
             <select
               className="source-select"
               value={source}
@@ -453,7 +452,7 @@ export default function HomePage({ onStart, onOpenCustomRun, history, gameRules,
               raise the question. */}
           {isPointercrate && (
             <fieldset className="pointercrate-parts">
-              <legend>Pointercrate lists</legend>
+              <legend>{t('home.pointercrateLists')}</legend>
               {POINTERCRATE_PARTS.map((part) => (
                 <label className="settings-toggle-row" key={part.id}>
                   <input
@@ -463,7 +462,7 @@ export default function HomePage({ onStart, onOpenCustomRun, history, gameRules,
                   />
                   <span>
                     <strong>{part.label}</strong>
-                    <small>{part.note}</small>
+                    <small>{translate(part.key)}</small>
                   </span>
                 </label>
               ))}
@@ -471,9 +470,7 @@ export default function HomePage({ onStart, onOpenCustomRun, history, gameRules,
                   that together the first two are the whole ranked top 150, which is
                   what this source played before the boxes existed. */}
               <small className="pointercrate-parts-hint">
-                Main and Extended are the ranked top 150, and are both ticked by
-                default. Legacy is the other 552, which accept no new records on
-                Pointercrate.
+                {t('home.pointercrateHint')}
               </small>
             </fieldset>
           )}
@@ -481,7 +478,7 @@ export default function HomePage({ onStart, onOpenCustomRun, history, gameRules,
           {isRankable && (
             <div className="range-row">
               <label>
-                Start rank
+                {t('home.startRank')}
                 <input
                   type="number"
                   step="1"
@@ -491,7 +488,7 @@ export default function HomePage({ onStart, onOpenCustomRun, history, gameRules,
                 />
               </label>
               <label>
-                End rank
+                {t('home.endRank')}
                 <input
                   type="number"
                   step="1"
@@ -500,16 +497,21 @@ export default function HomePage({ onStart, onOpenCustomRun, history, gameRules,
                   placeholder={String(rangeMax)}
                 />
               </label>
-              <small className="range-hint">Use arrow keys to decrease the numbers.</small>
+              <small className="range-hint">{t('home.arrowHint')}</small>
             </div>
           )}
 
           <button type="submit" className="primary-button" disabled={isLoading}>
-            {isLoading ? `Loading ${SOURCE_LABELS[source] ?? 'list'}...` : 'Start roulette'}
+            {isLoading ? t('home.loadingList', { source: SOURCE_LABELS[source] ?? t('common.loading') }) : t('home.startRoulette')}
           </button>
             </form>
           </div>
 
+          {/* At the bottom of the menu rather than in the settings dialog on purpose:
+              it is a one-time choice, not a rule the player tunes between runs, and
+              somebody who cannot read the site at all needs to find it before they
+              can open anything else. */}
+          <LanguagePicker />
         </div>
 
       </section>

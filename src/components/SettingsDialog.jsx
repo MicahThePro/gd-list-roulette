@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslate } from '../i18n/useTranslate.js'
 
 /**
  * The percentage-step setting, shown in a dialog like the What's new and quit
@@ -31,6 +32,7 @@ export default function SettingsDialog({
   isMasked,
   onIsMaskedChange,
 }) {
+  const { t } = useTranslate()
   const closeRef = useRef(null)
   const dialogRef = useRef(null)
   // The dialog is the same component across opens, so a ref carries whether the
@@ -127,8 +129,8 @@ export default function SettingsDialog({
       >
         <div className="changelog-head">
           <div>
-            <p className="eyebrow">Settings</p>
-            <h2 id="settings-title">Run settings</h2>
+            <p className="eyebrow">{t('settings.eyebrow')}</p>
+            <h2 id="settings-title">{t('settings.title')}</h2>
           </div>
           <button
             ref={closeRef}
@@ -140,14 +142,14 @@ export default function SettingsDialog({
               onClose()
             }}
           >
-            Close
+            {t('common.close')}
           </button>
         </div>
 
         <div className="settings-dialog-body">
           <section className="settings-section">
             <label className="settings-field">
-              Percentage increment
+              {t('settings.percentIncrement')}
               <input
                 type="text"
                 inputMode="numeric"
@@ -163,14 +165,16 @@ export default function SettingsDialog({
             </label>
 
             <p className="settings-hint" id="settings-step-hint">
-              Currently stepping up by +{percentStep}%, which means {estimatedRounds}{' '}
-              {estimatedRounds === 1 ? 'level' : 'levels'} to finish a run.
+              {t('settings.stepHint', {
+                step: percentStep,
+                rounds: estimatedRounds,
+                levels: estimatedRounds === 1 ? t('settings.stepHintLevel') : t('settings.stepHintLevels'),
+              })}
             </p>
 
             {!hasSeenHint && (
               <p className="settings-note">
-                Saved as soon as you click away, so pressing Close keeps whatever you
-                typed.
+                {t('settings.savedOnBlur')}
               </p>
             )}
           </section>
@@ -183,18 +187,15 @@ export default function SettingsDialog({
                 onChange={(event) => onAllowSkipChange(event.target.checked)}
               />
               <span>
-                <strong>Allow skipping</strong>
-                <small>
-                  When this is off, the Skip button is gone and a level you cannot
-                  beat ends the run.
-                </small>
+                <strong>{t('settings.allowSkipping')}</strong>
+                <small>{t('settings.allowSkippingNote')}</small>
               </span>
             </label>
           </section>
 
           <section className="settings-section">
             <label className="settings-field">
-              Time limit per level (minutes)
+              {t('settings.levelLimit')}
               <input
                 type="text"
                 inputMode="numeric"
@@ -208,14 +209,14 @@ export default function SettingsDialog({
 
             <p className="settings-hint" id="settings-level-limit-hint">
               {levelTimeLimitDraft === '' || Number(levelTimeLimitDraft) === 0
-                ? 'Off. You can spend as long as you like on each level.'
-                : 'Running out of time on a level ends the run right there.'}
+                ? t('settings.levelLimitOff')
+                : t('settings.levelLimitOn')}
             </p>
           </section>
 
           <section className="settings-section">
             <label className="settings-field">
-              Time limit for the whole run (minutes)
+              {t('settings.totalLimit')}
               <input
                 type="text"
                 inputMode="numeric"
@@ -229,8 +230,8 @@ export default function SettingsDialog({
 
             <p className="settings-hint" id="settings-total-limit-hint">
               {totalTimeLimitDraft === '' || Number(totalTimeLimitDraft) === 0
-                ? 'Off. The run only ends when you finish, fail or give up.'
-                : 'A speedrun: see how many levels you can clear before the clock runs out.'}
+                ? t('settings.totalLimitOff')
+                : t('settings.totalLimitOn')}
             </p>
           </section>
 
@@ -250,23 +251,20 @@ export default function SettingsDialog({
                 onChange={(event) => onIsMaskedChange(!event.target.checked)}
               />
               <span>
-                <strong>Show uncensored level names</strong>
-                <small>Some level names contain a swear word. Off is the default.</small>
+                <strong>{t('settings.showUncensored')}</strong>
+                <small>{t('settings.showUncensoredNote')}</small>
               </span>
             </label>
 
             {!isMasked && (
               <p className="settings-censor-warning">
-                Uncensored names are on, so level names may contain profanity — including
-                in runs you send in.
+                {t('settings.censorWarning')}
               </p>
             )}
           </section>
 
           <p className="settings-note settings-note-footer">
-            The run rules above are saved to this browser and are locked in when a run
-            starts, so changing them mid-run will not affect the run you are playing.
-            The mask is not a run rule, so it applies straight away.
+            {t('settings.footer')}
           </p>
         </div>
       </div>

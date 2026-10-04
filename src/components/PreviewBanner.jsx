@@ -1,4 +1,5 @@
 import { endPreviewSession } from '../services/adminService'
+import { useTranslate } from '../i18n/useTranslate.js'
 
 /**
  * The preview banner.
@@ -15,6 +16,8 @@ import { endPreviewSession } from '../services/adminService'
  * button does.
  */
 export default function PreviewBanner({ username, onEnded }) {
+  const { t } = useTranslate()
+
   if (!username) {
     return null
   }
@@ -29,12 +32,12 @@ export default function PreviewBanner({ username, onEnded }) {
       <div className="preview-outline" aria-hidden="true" />
       <div className="preview-banner" role="status">
         <span className="preview-dot" aria-hidden="true" />
-        <strong>Previewing {username}&rsquo;s account</strong>
+        <strong>{t('preview.previewing', { username })}</strong>
         <span className="preview-note">
-          You are signed in as them. Anything you do here is done as them.
+          {t('preview.note')}
         </span>
         <button type="button" className="preview-exit" onClick={handleEnd}>
-          End preview
+          {t('preview.end')}
         </button>
       </div>
     </>

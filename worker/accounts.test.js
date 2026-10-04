@@ -47,7 +47,7 @@ const call = async (env, path, { method = 'GET', body, token, passcode } = {}) =
   // The version gate refuses any /api call without the protocol header, so every
   // test here sends it by default. `protocol: false` drops it, which is how the
   // gate itself is exercised.
-  const headers = { 'x-dlr-protocol': '2' }
+  const headers = { 'x-dlr-protocol': '3' }
   if (body !== undefined) headers['content-type'] = 'application/json'
   if (token) headers.authorization = `Bearer ${token}`
   if (passcode) headers['x-admin-passcode'] = passcode

@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { uploadRecording } from '../services/submissionService'
 import { markSubmitted } from '../utils/submittedRuns'
 import { CONTAINERS, SUGGESTED_HOSTS, getHostLabel, normalizeContainer, normalizeVideoUrl } from '../utils/videoFile'
+import { useTranslate } from '../i18n/useTranslate.js'
+import { translate } from '../i18n/i18n.js'
 
 /**
  * The global leaderboard submission form.
@@ -31,6 +33,7 @@ export default function SubmitRunForm({
   intro,
   onSubmitted,
 }) {
+  const { t } = useTranslate()
   const [status, setStatus] = useState({ state: 'idle', message: '' })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [videoUrl, setVideoUrl] = useState('')
@@ -72,8 +75,8 @@ export default function SubmitRunForm({
     setStatus({
       state: 'idle',
       message: isDirectSubmitBypass
-        ? 'Saving your run and sending it directly to the global leaderboard.'
-        : 'Saving your run and sending the link for review.',
+        ? t('submit.sendingDirect')
+        : t('submit.sendingForReview'),
     })
 
     // Declared outside the try so the 409 branch can name the run it refers to.
@@ -94,7 +97,7 @@ export default function SubmitRunForm({
       markSubmitted(saved.runKey ?? saved.id)
       setStatus({
         state: 'done',
-        message: 'Submitted. Your run is waiting to be checked, and will appear on the global leaderboard once it is.',
+        message: t('submit.done'),
       })
       onSubmitted?.(saved.id)
     } catch (error) {
@@ -107,7 +110,7 @@ export default function SubmitRunForm({
         setStatus({ state: 'done', message: error.message })
         return
       }
-      setStatus({ state: 'error', message: error?.message ?? 'Could not submit that run.' })
+      setStatus({ state: 'error', message: error?.message ?? t('submit.failed') })
     } finally {
       setIsSubmitting(false)
     }
@@ -116,82 +119,52 @@ export default function SubmitRunForm({
   if (!auth.user) {
     return (
       <>
-        <p>
-          Sign in and this run can be submitted to the global leaderboard, where everyone can see
-          how far it got.
-        </p>
-        <p className="settings-hint">
-          Runs are saved to an account rather than to this browser, so signing in is what gives
-          this run somewhere to live. Until you do, it is not saved anywhere. Signing in needs a
-          username and a password — there is no email address, so nothing to lose and no waiting
-          on a message.
-        </p>
+        <p>{t('submit.signInIntro')}</p>
+        <p className="settings-hint">{t('submit.signInHint')}</p>
       </>
     )
   }
 
   if (alreadySubmitted) {
     return (
-      <p className="settings-hint">
-        This run is already in the moderation queue, so it does not need sending again. It will
-        appear on the global leaderboard once somebody has watched the video.
-      </p>
+      <p className="settings-hint">{t('submit.alreadyQueued')}</p>
     )
   }
 
   if (!isSubmittable) {
     return (
-      <p className="settings-hint">
-        Runs on this list are not ranked. The leaderboard covers the five lists on the home
-        screen.
-      </p>
+      <p className="settings-hint">{t('submit.notRanked')}</p>
     )
   }
 
   return (
     <>
       {intro ?? (
-        <p>
-          Submit this run to the global leaderboard as <strong>@{auth.user.username}</strong>.
-        </p>
+        <p>{t('submit.defaultIntro', { username: auth.user.username })}</p>
       )}
 
       {isDirectSubmitBypass ? (
-        <p className="settings-hint">
-          Direct global submission is enabled for <strong>@{auth.user.username}</strong>.
-          No video is required, and your run goes straight to the leaderboard.
-        </p>
+        <p className="settings-hint">{t('submit.bypassHint', { username: auth.user.username })}</p>
       ) : (
         <>
-          <p className="settings-hint">
-            A run has to have a video of it before it can go on the global leaderboard.
-            Somebody watches the video first, so your run waits in the queue rather than
-            appearing straight away.
-          </p>
-
           <div className="submit-proof">
-            <strong>1. Put your video somewhere</strong>
-            <p className="settings-hint">
-              The site does not host video, so upload it somewhere you already have an account
-              and make it link shareable. Any of these work:
-            </p>
+            <strong>{t('submit.step1')}</strong>
+            <p className="settings-hint">{t('submit.step1Hint')}</p>
             <ul className="host-list">
               {SUGGESTED_HOSTS.map((host) => (
                 <li key={host.name}>
                   <strong>{host.name}</strong>
-                  <span>{host.hint}</span>
+                  <span>{translate(host.key)}</span>
                 </li>
               ))}
             </ul>
             <p className="settings-hint">
-              Keep the video up until your run is approved. On YouTube, upload it as{' '}
-              <strong>Unlisted</strong> rather than public, so it stays off search and your
-              channel.
+              {t('submit.step1Hint2', { unlisted: t('submit.unlisted') })}
             </p>
           </div>
 
           <label className="submit-field">
-            2. Paste the link
+            {t('submit.step2')}
             <input
               type="url"
               inputMode="url"
@@ -204,12 +177,12 @@ export default function SubmitRunForm({
           {linkError && <div className="validation-message">{linkError}</div>}
           {linkOk && (
             <p className="export-status">
-              Link looks good: {getHostLabel(linkOk)}
+              {t('submit.linkOk', { host: getHostLabel(linkOk) })}
             </p>
           )}
 
           <label className="submit-field">
-            3. What file is it?
+            {t('submit.step3')}
             <select
               value={container}
               onChange={(event) => setContainer(normalizeContainer(event.target.value) ?? 'mp4')}
@@ -222,21 +195,18 @@ export default function SubmitRunForm({
               ))}
             </select>
           </label>
-          <p className="settings-hint">
-            WebM and MP4 open in a browser. MOV, AVI and MKV are accepted too, but the reviewer
-            opens them in a video player rather than in the page.
-          </p>
+          <p className="settings-hint">{t('submit.containerHint')}</p>
         </>
       )}
 
       <label className="submit-field">
-        Anything to add? (optional)
+        {t('submit.noteLabel')}
         <input
           type="text"
           value={note}
           maxLength={200}
           onChange={(event) => setNote(event.target.value)}
-          placeholder="e.g. recorded with OBS, run starts at 1:20"
+          placeholder={t('submit.notePlaceholder')}
           disabled={isSubmitting}
         />
       </label>
@@ -248,7 +218,7 @@ export default function SubmitRunForm({
           onClick={handleSubmit}
           disabled={isSubmitting || (!isDirectSubmitBypass && !videoUrl.trim())}
         >
-          {isSubmitting ? 'Submitting...' : 'Submit run'}
+          {isSubmitting ? t('submit.submitting') : t('submit.submitRun')}
         </button>
       </div>
       {status.message && (

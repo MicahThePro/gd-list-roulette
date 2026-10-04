@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { redeemLoginCode } from '../services/adminService'
+import { useTranslate } from '../i18n/useTranslate.js'
 
 /* The username the panel put in the link, read once as the initial value rather
    than in an effect. It never changes afterwards -- it is what the page was opened
@@ -32,6 +33,7 @@ const usernameFromLink = () => {
  * text can be pasted rather than read.
  */
 export default function RedeemCodePage({ onExit, onRedeemed }) {
+  const { t } = useTranslate()
   const [username, setUsername] = useState(usernameFromLink)
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
@@ -43,7 +45,7 @@ export default function RedeemCodePage({ onExit, onRedeemed }) {
       await navigator.clipboard?.writeText(username.trim())
       setHasCopied(true)
     } catch {
-      setError('Could not copy that. Type it out instead.')
+      setError(t('redeem.copyFailed'))
     }
   }
 
@@ -61,7 +63,7 @@ export default function RedeemCodePage({ onExit, onRedeemed }) {
       const user = await redeemLoginCode({ username: username.trim(), code })
       onRedeemed?.(user)
     } catch (caught) {
-      setError(caught?.message ?? 'Could not use that code.')
+      setError(caught?.message ?? t('redeem.codeFailed'))
     } finally {
       setIsWorking(false)
     }
@@ -70,18 +72,15 @@ export default function RedeemCodePage({ onExit, onRedeemed }) {
   return (
     <main className="page-shell admin-page">
       <section className="panel admin-gate">
-        <p className="eyebrow">Preview</p>
-        <h2>Sign in as a player</h2>
+        <p className="eyebrow">{t('redeem.eyebrow')}</p>
+        <h2>{t('redeem.title')}</h2>
         <form onSubmit={handleSubmit}>
           <p className="settings-hint">
-            A code is issued from the admin panel, on an account. Enter that
-            account&rsquo;s username with the code to sign this browser in as them.
-            It works once: the moment it is used it cannot be used again, and
-            signing out ends the session.
+            {t('redeem.hint')}
           </p>
 
           <label className="admin-note">
-            Username
+            {t('redeem.username')}
             <input
               type="text"
               value={username}
@@ -90,7 +89,7 @@ export default function RedeemCodePage({ onExit, onRedeemed }) {
                 setHasCopied(false)
                 setError('')
               }}
-              placeholder="their username"
+              placeholder={t('redeem.usernamePlaceholder')}
               autoComplete="off"
               spellCheck="false"
             />
@@ -99,17 +98,16 @@ export default function RedeemCodePage({ onExit, onRedeemed }) {
           {username.trim().length >= 3 && (
             <div className="action-row">
               <button type="button" className="secondary-button" onClick={handleCopyUsername}>
-                {hasCopied ? 'Copied' : 'Copy username'}
+                {hasCopied ? t('redeem.copied') : t('redeem.copyUsername')}
               </button>
               <span className="settings-hint">
-                1, l, I, 0 and O are the same glyph in most fonts. Check the line
-                you paste against the panel.
+                {t('redeem.copyHint')}
               </span>
             </div>
           )}
 
           <label className="admin-note">
-            Login code
+            {t('redeem.loginCode')}
             <input
               type="text"
               value={code}
@@ -130,10 +128,10 @@ export default function RedeemCodePage({ onExit, onRedeemed }) {
 
           <div className="action-row">
             <button type="submit" className="primary-button" disabled={!canSubmit}>
-              {isWorking ? 'Signing in...' : 'Sign in as that player'}
+              {isWorking ? t('redeem.signingIn') : t('redeem.signInAs')}
             </button>
             <button type="button" className="secondary-button" onClick={onExit}>
-              Cancel
+              {t('common.cancel')}
             </button>
           </div>
         </form>

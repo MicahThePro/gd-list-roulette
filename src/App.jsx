@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { getLanguage, subscribeToLanguage } from './i18n/i18n.js'
+import { useTranslate } from './i18n/useTranslate.js'
 import HomePage from './pages/HomePage'
 import RoulettePage from './pages/RoulettePage'
 import ResultsPage from './pages/ResultsPage'
@@ -160,6 +162,23 @@ const hydrateAredlLevel = async (runState, level) => {
 }
 
 function App() {
+  /* Held up here so a language change repaints the whole app.
+   *
+   * The store itself lives in i18n/i18n.js rather than in context, because the
+   * mask and the language are both read by plain functions called from inside
+   * JSX in components that are handed no settings at all. What that design cannot
+   * do is re-render anything by itself -- a ref and a module variable both fail
+   * silently here -- so this one subscription is what turns a click on a
+   * language button into a redraw of every screen. Nothing below this component
+   * has to know the language exists: they all read `t` at render, and this makes
+   * sure they are rendered again. */
+  const { language, t } = useTranslate()
+  const [, setLanguageState] = useState(getLanguage)
+  useEffect(() => subscribeToLanguage(setLanguageState), [])
+  /* Referenced so the language itself is a dependency of the title effect below,
+     which is the one piece of site text a screen reader and a browser tab both
+     read, and neither of them repaints on a state change alone. */
+  const currentLanguage = language
   const [customRunId, setCustomRunId] = useState(() =>
     typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('custom') : null,
   )
@@ -235,7 +254,7 @@ function App() {
   // changelog entry as the on-page heading.
   useEffect(() => {
     document.title = `${SITE_NAME} ${LATEST_VERSION}`
-  }, [])
+  }, [currentLanguage])
 
   /* Deletes the copies of runs older versions kept in this browser.
 
@@ -397,7 +416,7 @@ function App() {
         hydratedNextLevel = level
         setCustomRunError('')
       } catch (error) {
-        setCustomRunError(`${error?.message ?? 'Could not load the next challenge level.'} Submit this level again to retry.`)
+        setCustomRunError(t('roulette.customRunRetry', { message: error?.message ?? t('roulette.nextLevelFailed') }))
         return
       }
     } else {
@@ -477,7 +496,7 @@ function App() {
         hydratedNextLevel = response.level
         setCustomRunError('')
       } catch (error) {
-        setCustomRunError(`${error?.message ?? 'Could not load the next challenge level.'} Choose Skip again to retry.`)
+        setCustomRunError(t('roulette.customRunSkipRetry', { message: error?.message ?? t('roulette.nextLevelFailed') }))
         return
       }
     } else {
@@ -867,7 +886,7 @@ function App() {
           </span>
           <div>
             <strong>
-              Made by{' '}
+              {t('topbar.madeBy')}{' '}
               <a
                 href="https://gdbrowser.com/u/geometricalmike"
                 target="_blank"
@@ -880,7 +899,7 @@ function App() {
               </a>
             </strong>
             <small>
-              Dedicated to{' '}
+              {t('topbar.dedicatedTo')}{' '}
               <a
                 href="https://gdbrowser.com/u/vortrox"
                 target="_blank"
@@ -928,14 +947,14 @@ function App() {
                 d="M12 .9a11.1 11.1 0 0 0-3.51 21.63c.56.1.76-.24.76-.54v-2.08c-3.1.67-3.76-1.32-3.76-1.32-.51-1.29-1.24-1.63-1.24-1.63-1.02-.7.08-.69.08-.69 1.13.08 1.73 1.16 1.73 1.16 1 .1.76 2.14 3.53 1.52.1-.73.39-1.23.7-1.52-2.48-.28-5.09-1.24-5.09-5.52 0-1.22.44-2.22 1.16-3-.12-.29-.5-1.43.11-2.98 0 0 .95-.3 3.05 1.15a10.6 10.6 0 0 1 5.55 0c2.1-1.45 3.05-1.15 3.05-1.15.61 1.55.23 2.69.11 2.98.72.78 1.16 1.78 1.16 3 0 4.29-2.61 5.24-5.1 5.51.4.35.75 1.03.75 2.08v3.09c0 .3.2.65.77.54A11.1 11.1 0 0 0 12 .9Z"
               />
             </svg>
-            See project on GitHub
+            {t('topbar.github')}
           </a>
           <button
             type="button"
             className="secondary-button small-button"
             onClick={openProfiles}
           >
-            Profiles
+            {t('topbar.profiles')}
           </button>
           <button
             type="button"
@@ -943,9 +962,9 @@ function App() {
             onClick={openNotifications}
             disabled={!auth.user}
           >
-            <span>Notifications</span>
+            <span>{t('topbar.notifications')}</span>
             {notificationCount > 0 && (
-              <span className="notification-badge" aria-label={`${notificationCount} unread notifications`}>
+              <span className="notification-badge" aria-label={t('topbar.unreadNotifications', { count: notificationCount })}>
                 {notificationCount > 99 ? '99+' : notificationCount}
               </span>
             )}
@@ -991,14 +1010,12 @@ function App() {
               }
             }}
           >
-            <h2 id="run-navigation-title">End your run to continue?</h2>
+            <h2 id="run-navigation-title">{t('nav.endRunTitle')}</h2>
             <p>
-              You need to end your current run before opening{' '}
-              {pendingRunNavigation === SCREEN.PROFILE ? 'Profiles' : 'Notifications'}.
-              You can discard it, or give up.{' '}
-              {auth.user
-                ? 'Your progress will be saved to your account before you continue.'
-                : 'You can sign in from the results screen to save the run.'}
+              {t('nav.endRunBody', {
+                target: pendingRunNavigation === SCREEN.PROFILE ? t('topbar.profiles') : t('topbar.notifications'),
+              })}
+              {auth.user ? t('nav.signedInHint') : t('nav.signedOutHint')}
             </p>
             <div className="modal-actions">
               <button
@@ -1007,7 +1024,7 @@ function App() {
                 onClick={() => setPendingRunNavigation(null)}
                 autoFocus
               >
-                Keep playing
+                {t('nav.keepPlaying')}
               </button>
               <button
                 type="button"
@@ -1018,7 +1035,9 @@ function App() {
                   handleQuitRun(destination)
                 }}
               >
-                {`Discard and open ${pendingRunNavigation === SCREEN.PROFILE ? 'Profiles' : 'Notifications'}`}
+                {t('nav.discardAndOpen', {
+                  target: pendingRunNavigation === SCREEN.PROFILE ? t('topbar.profiles') : t('topbar.notifications'),
+                })}
               </button>
               <button
                 type="button"
@@ -1030,8 +1049,10 @@ function App() {
                 }}
               >
                 {auth.user
-                  ? `Give up and open ${pendingRunNavigation === SCREEN.PROFILE ? 'Profiles' : 'Notifications'}`
-                  : 'Give up and review run'}
+                  ? t('nav.giveUpAndOpen', {
+                      target: pendingRunNavigation === SCREEN.PROFILE ? t('topbar.profiles') : t('topbar.notifications'),
+                    })
+                  : t('nav.giveUpAndReview')}
               </button>
             </div>
           </div>

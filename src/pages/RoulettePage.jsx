@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { formatDurationMs, getRunElapsedMs, getSkipReasonLabel, SKIP_REASONS } from '../utils/roulette'
 import { censorText } from '../utils/censor'
+import { useTranslate } from '../i18n/useTranslate.js'
 
 export default function RoulettePage({ run, onSuccess, onSkip, onGiveUp, onQuit, customRunError = '' }) {
+  const { t } = useTranslate()
   const [achievedPercent, setAchievedPercent] = useState('')
   const [validationMessage, setValidationMessage] = useState('')
   const [levelCopyMessage, setLevelCopyMessage] = useState('')
@@ -106,8 +108,8 @@ export default function RoulettePage({ run, onSuccess, onSkip, onGiveUp, onQuit,
 
   const challengeEntries = (run?.rounds ?? []).map((round, index) => ({
     id: `${round.level?.id ?? 'round'}-${index}`,
-    name: round.level?.name ?? 'Unknown level',
-    creator: round.level?.creator ?? 'Unknown creator',
+    name: round.level?.name ?? t('roulette.unknownLevel'),
+    creator: round.level?.creator ?? t('roulette.unknownCreator'),
     thumbnail: round.level?.thumbnail ?? null,
     target: round.targetPercent ?? run?.currentTarget,
     result: round.result,
@@ -133,20 +135,20 @@ export default function RoulettePage({ run, onSuccess, onSkip, onGiveUp, onQuit,
 
     if (sanitized === '') {
       setAchievedPercent('')
-      setValidationMessage(`You can't enter nothing. You need at least ${run.currentTarget}%`)
+      setValidationMessage(t('roulette.enterNothing', { target: run.currentTarget }))
       return
     }
 
     const numeric = Number(sanitized)
     if (!Number.isFinite(numeric)) {
       setAchievedPercent('')
-      setValidationMessage(`You can't enter anything below ${run.currentTarget}%`)
+      setValidationMessage(t('roulette.enterBelow', { target: run.currentTarget }))
       return
     }
 
     if (numeric < run.currentTarget) {
       setAchievedPercent(String(numeric))
-      setValidationMessage(`You can't enter less than ${run.currentTarget}%`)
+      setValidationMessage(t('roulette.enterLess', { target: run.currentTarget }))
       return
     }
 
@@ -161,19 +163,15 @@ export default function RoulettePage({ run, onSuccess, onSkip, onGiveUp, onQuit,
         <section className="panel status-panel">
           {customRunError && <p className="validation-message" role="alert">{customRunError}</p>}
           {!run.customRunId && (
-            <aside className="recording-reminder" aria-label="Leaderboard recording advice">
-              <strong>Want to submit this run to the leaderboard?</strong>
-              <span>
-                Start recording before your first attempt. Keep one continuous video that clearly
-                shows the Geometry Dash level, your attempts and their results, and the progress you
-                enter here. Avoid cuts, and keep the video available for review.
-              </span>
+            <aside className="recording-reminder" aria-label={t('roulette.recordingAdviceLabel')}>
+              <strong>{t('roulette.recordingTitle')}</strong>
+              <span>{t('roulette.recordingBody')}</span>
             </aside>
           )}
           <div className="status-header">
             <div>
-              <p className="eyebrow">Round {run.rounds.length + 1}</p>
-              <h2>Target {run.currentTarget}%</h2>
+              <p className="eyebrow">{t('roulette.round', { number: run.rounds.length + 1 })}</p>
+              <h2>{t('roulette.target', { target: run.currentTarget })}</h2>
             </div>
             <div className="status-actions">
               <span className="badge">{censorText(run.source)}</span>
@@ -191,13 +189,13 @@ export default function RoulettePage({ run, onSuccess, onSkip, onGiveUp, onQuit,
                 <img
                   className="level-thumbnail"
                   src={run.currentLevel.thumbnail}
-                  alt={`${censorText(run.currentLevel.name)} thumbnail`}
+                  alt={t('roulette.thumbnailAlt', { name: censorText(run.currentLevel.name) })}
                   loading="lazy"
                 />
               </a>
             )}
 
-            <p className="level-meta">#{run.currentLevel.position} on the list</p>
+            <p className="level-meta">{t('roulette.onTheList', { position: run.currentLevel.position })}</p>
             {/* The required rate and game version come from the Impossible
                 Levels site. Either can be absent, so each is rendered only
                 when present, and the row disappears entirely when neither is. */}
@@ -216,14 +214,14 @@ export default function RoulettePage({ run, onSuccess, onSkip, onGiveUp, onQuit,
               </div>
             )}
             <h3>{censorText(run.currentLevel.name)}</h3>
-            <p>{run.currentLevel.creator ? `By ${run.currentLevel.creator}` : 'Community pick'}</p>
-            <div className="timer-badge">Time: {formatDurationMs(displayElapsed)}</div>
+            <p>{run.currentLevel.creator ? t('roulette.by', { creator: run.currentLevel.creator }) : t('roulette.communityPick')}</p>
+            <div className="timer-badge">{t('roulette.time', { time: formatDurationMs(displayElapsed) })}</div>
             {/* Only the clock that is actually running is shown. The level
                 countdown turns red in the last 30 seconds so the end of a run
                 is visible before it happens rather than announced. */}
             {levelLimitMs > 0 && (
               <div className={`timer-badge timer-countdown${displayElapsed >= levelLimitMs - 30000 ? ' timer-countdown-urgent' : ''}`}>
-                Level time left: {formatDurationMs(Math.max(0, levelLimitMs - displayElapsed))}
+                {t('roulette.levelTimeLeft', { time: formatDurationMs(Math.max(0, levelLimitMs - displayElapsed)) })}
               </div>
             )}
             {totalLimitMs > 0 && (() => {
@@ -235,7 +233,7 @@ export default function RoulettePage({ run, onSuccess, onSkip, onGiveUp, onQuit,
               const totalLeft = Math.max(0, totalLimitMs - totalUsed)
               return (
                 <div className={`timer-badge timer-countdown${totalLeft <= 30000 ? ' timer-countdown-urgent' : ''}`}>
-                  Run time left: {formatDurationMs(totalLeft)}
+                  {t('roulette.runTimeLeft', { time: formatDurationMs(totalLeft) })}
                 </div>
               )
             })()}
@@ -245,10 +243,10 @@ export default function RoulettePage({ run, onSuccess, onSkip, onGiveUp, onQuit,
                 type="button"
                 onClick={() => {
                   navigator.clipboard?.writeText(String(run.currentLevel.levelId))
-                  setLevelCopyMessage('Copied!')
+                  setLevelCopyMessage(t('roulette.copied'))
                 }}
               >
-                Level ID: {run.currentLevel.levelId}
+                {t('roulette.levelId', { id: run.currentLevel.levelId })}
               </button>
             ) : (
               <a
@@ -257,7 +255,7 @@ export default function RoulettePage({ run, onSuccess, onSkip, onGiveUp, onQuit,
                 target="_blank"
                 rel="noreferrer"
               >
-                View on Challenge List
+                {t('roulette.viewOnChallengeList')}
               </a>
             )}
             {levelCopyMessage && <div className="copy-toast">{levelCopyMessage}</div>}
@@ -265,7 +263,7 @@ export default function RoulettePage({ run, onSuccess, onSkip, onGiveUp, onQuit,
 
           <div className="result-form">
             <label>
-              Achieved percentage
+              {t('roulette.achieved')}
               <input
                 type="number"
                 min={run.currentTarget}
@@ -288,7 +286,7 @@ export default function RoulettePage({ run, onSuccess, onSkip, onGiveUp, onQuit,
               }}
               disabled={achievedPercent === '' || Number(achievedPercent) < run.currentTarget}
             >
-              Success
+              {t('roulette.success')}
             </button>
             {canSkip && (
               <button
@@ -298,11 +296,11 @@ export default function RoulettePage({ run, onSuccess, onSkip, onGiveUp, onQuit,
                 aria-expanded={isSkipPickerOpen}
                 onClick={() => setIsSkipPickerOpen((open) => !open)}
               >
-                Skip
+                {t('roulette.skip')}
               </button>
             )}
             <button className="secondary-button" type="button" onClick={onGiveUp}>
-              Give up
+              {t('roulette.giveUp')}
             </button>
             {/* Quitting discards the run entirely, unlike Give up which ends
                 it and records it. A single click only opens the confirm
@@ -312,7 +310,7 @@ export default function RoulettePage({ run, onSuccess, onSkip, onGiveUp, onQuit,
               type="button"
               onClick={() => setIsConfirmingQuit(true)}
             >
-              Quit run
+              {t('roulette.quitRun')}
             </button>
           </div>
 
@@ -320,8 +318,8 @@ export default function RoulettePage({ run, onSuccess, onSkip, onGiveUp, onQuit,
 
         <aside className="panel challenge-panel">
           <div className="challenge-header">
-            <p className="eyebrow">Challenge board</p>
-            <h3>Levels</h3>
+            <p className="eyebrow">{t('roulette.challengeBoard')}</p>
+            <h3>{t('roulette.levelsHeading')}</h3>
           </div>
 
           <div className="challenge-list" ref={challengeListRef}>
@@ -331,7 +329,7 @@ export default function RoulettePage({ run, onSuccess, onSkip, onGiveUp, onQuit,
                     put in it. Omitting it would pull the level name into the
                     thumbnail's grid column and squeeze the text. */}
                 {entry.thumbnail ? (
-                  <img src={entry.thumbnail} alt={`${censorText(entry.name)} thumbnail`} className="challenge-thumb" loading="lazy" />
+                  <img src={entry.thumbnail} alt={t('roulette.thumbnailAlt', { name: censorText(entry.name) })} className="challenge-thumb" loading="lazy" />
                 ) : (
                   <span className="challenge-thumb challenge-thumb-empty" aria-hidden="true" />
                 )}
@@ -340,8 +338,11 @@ export default function RoulettePage({ run, onSuccess, onSkip, onGiveUp, onQuit,
                   <span>{entry.creator}</span>
                   <small>
                     {entry.result === 'skipped'
-                      ? `Skipped${entry.skipReason ? ` • ${getSkipReasonLabel(entry.skipReason)}` : ''} • ${entry.target}%`
-                      : `Target ${entry.target}%`}
+                      ? t('roulette.skippedLine', {
+                          reason: entry.skipReason ? t('roulette.skipReasonSeparator') + getSkipReasonLabel(entry.skipReason) : '',
+                          target: entry.target,
+                        })
+                      : t('roulette.targetLine', { target: entry.target })}
                     {entry.achieved !== null && entry.achieved !== undefined ? ` • ${entry.achieved}%` : ''}
                     {entry.elapsedLabel ? ` • ${entry.elapsedLabel}` : ''}
                   </small>
@@ -365,8 +366,8 @@ export default function RoulettePage({ run, onSuccess, onSkip, onGiveUp, onQuit,
             aria-labelledby="skip-dialog-title"
             onClick={(event) => event.stopPropagation()}
           >
-            <h2 id="skip-dialog-title">Why are you skipping?</h2>
-            <p>This is saved with the run, so you can see how your runs went later.</p>
+            <h2 id="skip-dialog-title">{t('roulette.skipDialogTitle')}</h2>
+            <p>{t('roulette.skipDialogBody')}</p>
             <div className="skip-reason-list">
               {SKIP_REASONS.map((reason) => (
                 <button
@@ -386,14 +387,14 @@ export default function RoulettePage({ run, onSuccess, onSkip, onGiveUp, onQuit,
                 onClick={() => chooseSkipReason(null)}
                 autoFocus
               >
-                Skip without a reason
+                {t('roulette.skipWithoutReason')}
               </button>
               <button
                 className="secondary-button"
                 type="button"
                 onClick={() => setIsSkipPickerOpen(false)}
               >
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           </div>
@@ -416,11 +417,8 @@ export default function RoulettePage({ run, onSuccess, onSkip, onGiveUp, onQuit,
             aria-labelledby="quit-dialog-title"
             onClick={(event) => event.stopPropagation()}
           >
-            <h2 id="quit-dialog-title">Quit this run?</h2>
-            <p>
-              Your progress will be lost and this run will not be added to the
-              leaderboard.
-            </p>
+            <h2 id="quit-dialog-title">{t('roulette.quitDialogTitle')}</h2>
+            <p>{t('roulette.quitDialogBody')}</p>
             <div className="modal-actions">
               <button
                 className="secondary-button"
@@ -428,14 +426,14 @@ export default function RoulettePage({ run, onSuccess, onSkip, onGiveUp, onQuit,
                 onClick={() => setIsConfirmingQuit(false)}
                 autoFocus
               >
-                No, keep playing
+                {t('roulette.noKeepPlaying')}
               </button>
               <button
                 className="danger-button"
                 type="button"
                 onClick={() => onQuit()}
               >
-                Yes, quit run
+                {t('roulette.yesQuitRun')}
               </button>
             </div>
           </div>

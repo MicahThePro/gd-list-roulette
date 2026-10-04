@@ -18,10 +18,12 @@
  */
 import { useEffect, useState } from 'react'
 import { isLocallyBanned } from '../services/adminService'
+import { useTranslate } from '../i18n/useTranslate.js'
 
 export const BAN_STORAGE_KEY = 'demon-roulette-device-banned'
 
 export function BannedNotice() {
+  const { t } = useTranslate()
   const [banned, setBanned] = useState(() => isLocallyBanned())
 
   // Checked after the first render too, so a device that is banned while the tab is
@@ -58,16 +60,12 @@ export function BannedNotice() {
       }}
     >
       <div style={{ maxWidth: '34rem', textAlign: 'center' }}>
-        <h1 style={{ fontSize: '1.35rem', margin: '0 0 1rem' }}>This device is blocked</h1>
+        <h1 style={{ fontSize: '1.35rem', margin: '0 0 1rem' }}>{t('banned.title')}</h1>
         <p style={{ lineHeight: 1.6, margin: '0 0 1rem', color: '#d1d5db' }}>
-          This device was permanently blocked after too many incorrect admin passcode
-          attempts. It cannot reach the server at all: not signing in, not submitting runs,
-          not the leaderboard.
+          {t('banned.body')}
         </p>
         <p style={{ lineHeight: 1.6, margin: '0 0 1rem', color: '#9ca3af', fontSize: '0.9rem' }}>
-          This notice is stored in your browser and can be cleared by clearing site data or
-          opening a private window. That does not lift the block itself -- the block is on
-          the server and does not move.
+          {t('banned.note')}
         </p>
       </div>
     </div>

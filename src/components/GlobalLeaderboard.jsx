@@ -5,6 +5,8 @@ import { censorText } from '../utils/censor'
 import { formatDurationMs } from '../utils/roulette'
 import PointercratePartsBadge from './PointercratePartsBadge'
 import { POINTERCRATE_PARTS } from '../services/pointercrateParts.js'
+import { useTranslate } from '../i18n/useTranslate.js'
+import { statusLabel } from '../utils/statusLabel.js'
 
 /* The list filter, built from the same names the list loader gives a run.
  * These were retyped here and drifted once: this filter expected 'All Rated
@@ -15,19 +17,15 @@ import { POINTERCRATE_PARTS } from '../services/pointercrateParts.js'
  * is the whole point: `id` is what is sent to the Worker and matched with an exact
  * comparison, so it has to be the string runs are actually stored under. Censoring
  * the id would filter on a value no run has, and the option would select nothing. */
+/* The list names stay in their own language -- they are also the exact values a
+ * run is stored under and filtered by. Only "All lists" is site copy. */
 const SOURCES = [
-  { id: 'all', label: 'All lists' },
+  { id: 'all', labelKey: 'board.allLists' },
   ...Object.values(LIST_SOURCES).map((name) => ({
     id: name,
     label: censorText(LIST_SOURCE_LABELS[name] ?? name),
   })),
 ]
-
-const STATUS_LABELS = {
-  completed: 'Cleared',
-  gaveup: 'Gave up',
-  failed: 'Failed',
-}
 
 const formatWhen = (timestamp) => {
   if (!Number.isFinite(timestamp)) return 'Unknown date'
@@ -49,6 +47,7 @@ const formatWhen = (timestamp) => {
  * one can never be mistaken for clearing the other.
  */
 export default function GlobalLeaderboard({ user }) {
+  const { t } = useTranslate()
   const [board, setBoard] = useState('farthest')
   const [source, setSource] = useState('all')
   /* Which Pointercrate list to narrow to. Empty means no narrowing.
@@ -150,10 +149,10 @@ export default function GlobalLeaderboard({ user }) {
         })
         .catch((caught) => {
           if (caught?.name === 'AbortError') return
-          setError(caught?.message ?? 'Could not load the leaderboard.')
+          setError(caught?.message ?? t('global.loadFailed'))
         })
     },
-    [board, source, parts],
+    [board, source, parts, t],
   )
 
   useEffect(() => {
@@ -192,7 +191,7 @@ export default function GlobalLeaderboard({ user }) {
   return (
     <div className="global-board">
       <div className="global-board-bar" ref={barRef}>
-        <div className="global-board-boards" role="tablist" aria-label="Leaderboard board">
+        <div className="global-board-boards" role="tablist" aria-label={t('global.boardsAria')}>
           {LEADERBOARD_BOARDS.map((entry) => (
             <button
               key={entry.id}
@@ -202,17 +201,17 @@ export default function GlobalLeaderboard({ user }) {
               className={board === entry.id ? 'secondary-button small-button board-chip board-chip-active' : 'secondary-button small-button board-chip'}
               onClick={() => setBoard(entry.id)}
             >
-              {entry.label}
+              {t(entry.labelKey ?? entry.id)}
             </button>
           ))}
         </div>
 
         <label className="global-board-source">
-          <span className="visually-hidden">Filter by list</span>
+          <span className="visually-hidden">{t('board.filterByList')}</span>
           <select value={source} onChange={(event) => handleSourceChange(event.target.value)}>
             {SOURCES.map((entry) => (
               <option key={entry.id} value={entry.id}>
-                {entry.label}
+                {entry.labelKey ? t(entry.labelKey) : entry.label}
               </option>
             ))}
           </select>
@@ -236,14 +235,14 @@ export default function GlobalLeaderboard({ user }) {
       </div>
 
       {source === LIST_SOURCES.POINTERCRATE && (
-        <div className="lb-part-filters" role="group" aria-label="Filter by Pointercrate list">
+        <div className="lb-part-filters" role="group" aria-label={t('board.filterByPointercrate')}>
           <button
             type="button"
             className={parts === '' ? 'lb-filter lb-filter-active' : 'lb-filter'}
             aria-pressed={parts === ''}
             onClick={() => setParts('')}
           >
-            All lists
+            {t('board.allLists')}
           </button>
           {POINTERCRATE_PARTS.map((part) => (
             <button
@@ -253,7 +252,7 @@ export default function GlobalLeaderboard({ user }) {
               aria-pressed={parts === part.id}
               onClick={() => setParts(parts === part.id ? '' : part.id)}
             >
-              {part.label} only
+              {t('board.partOnly', { part: part.label })}
             </button>
           ))}
         </div>
@@ -261,19 +260,22 @@ export default function GlobalLeaderboard({ user }) {
 
       {error && <div className="validation-message">{error}</div>}
 
-      {isLoading && !data && <p className="global-board-message">Loading the global leaderboard...</p>}
+      {isLoading && !data && <p className="global-board-message">{t('global.loading')}</p>}
 
       {data && data.personal && (
         <p className="lb-note">
-          You have submitted {data.personal.runs} run{data.personal.runs === 1 ? '' : 's'}, best{' '}
-          {data.personal.best}%
-          {data.you ? `, ranked #${data.you.rank} on this board.` : '. Submit a run to be ranked.'}
+          {t('global.personalNoteRuns', {
+            count: data.personal.runs,
+            runs: data.personal.runs === 1 ? t('global.personalRunsOne') : t('global.personalRunsMany'),
+            best: data.personal.best,
+          })}
+          {data.you ? t('global.personalNoteRanked', { rank: data.you.rank }) : t('global.personalNoteSubmit')}
         </p>
       )}
 
       {data && data.entries.length === 0 && !error && (
         <p className="global-board-message">
-          No runs on this board yet. Sign in and submit one from the results screen.
+          {t('global.empty')}
         </p>
       )}
 
@@ -298,11 +300,14 @@ export default function GlobalLeaderboard({ user }) {
                       all. */}
                   <strong>{entry.displayName}</strong>
                   <span className="lb-handle">@{entry.username}</span>
-                  {isYou && <em className="lb-you-tag">you</em>}
+                  {isYou && <em className="lb-you-tag">{t('global.you')}</em>}
                   <span className="lb-sub">
-                    {entry.passed} cleared · {entry.roundsPlayed} played ·{' '}
-                    {formatDurationMs(entry.totalMs)}
-                    {entry.timedOut ? ' · out of time' : ''} · {formatWhen(entry.createdAt)}
+                    {t('global.rowMeta', {
+                      cleared: entry.passed,
+                      played: entry.roundsPlayed,
+                      time: formatDurationMs(entry.totalMs),
+                    })}
+                    {entry.timedOut ? t('global.outOfTime') : ''} · {formatWhen(entry.createdAt)}
                   </span>
                 </span>
                 <span className="lb-sub">
@@ -311,8 +316,8 @@ export default function GlobalLeaderboard({ user }) {
                       server, so it is never rewritten -- only what is printed. */}
                   {censorText(entry.source)}
                   <PointercratePartsBadge parts={entry.pointercrateParts} />
-                  {entry.percentStep !== 1 ? ` · +${entry.percentStep}% steps` : ''} ·{' '}
-                  {STATUS_LABELS[entry.status] ?? entry.status}
+                  {entry.percentStep !== 1 ? t('global.steps', { step: entry.percentStep }) : ''} ·{' '}
+                  {statusLabel(t, entry.status)}
                 </span>
               </span>
               <strong className="lb-pct">{entry.score}%</strong>
