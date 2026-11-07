@@ -49,7 +49,7 @@ const getBoundsForSource = (sourceName) => {
   return fetchAredlListBounds()
 }
 
-export default function HomePage({ onStart, onOpenCustomRun, history, gameRules, isMasked, onIsMaskedChange, auth }) {
+export default function HomePage({ onStart, onOpenCustomRun, history, gameRules, isMasked, onIsMaskedChange, auth, onOpenProfile }) {
   const [isLoading, setIsLoading] = useState(false)
   const [isBoardOpen, setIsBoardOpen] = useState(false)
   // The board view has two halves: what this browser has played, and what
@@ -332,7 +332,7 @@ export default function HomePage({ onStart, onOpenCustomRun, history, gameRules,
           )}
 
           {activeTab === 'global' ? (
-            <GlobalLeaderboard user={auth.user} />
+            <GlobalLeaderboard user={auth.user} onOpenProfile={onOpenProfile} />
           ) : (
             <div className="board-personal">
               {/* Only on the personal board: a failed delete is about this list, and

@@ -301,7 +301,7 @@ export default function RoulettePage({ run, onSuccess, onSkip, onGiveUp, onQuit,
                 Skip
               </button>
             )}
-            <button className="secondary-button" type="button" onClick={onGiveUp}>
+            <button className="secondary-button" type="button" onClick={() => onGiveUp()}>
               Give up
             </button>
             {/* Quitting discards the run entirely, unlike Give up which ends
