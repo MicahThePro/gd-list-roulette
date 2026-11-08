@@ -215,7 +215,11 @@ export default function ProfilePage({ username, viewer, relationshipVersion, onR
         {profile?.user && (
           <div className="profile-card">
             <div className="profile-header">
-              <div>
+              <div className="profile-identity">
+                <span className="profile-avatar" aria-hidden="true">
+                  {(profile.user.displayName || profile.user.username || '?').trim().charAt(0).toUpperCase()}
+                </span>
+                <div className="profile-identity-copy">
                 <p className="eyebrow">{t('profile.player')}</p>
                 <h3>{profile.user.displayName || profile.user.username}</h3>
                 <p className="account-handle">@{profile.user.username}</p>
@@ -232,6 +236,7 @@ export default function ProfilePage({ username, viewer, relationshipVersion, onR
                     ))}
                   </div>
                 )}
+                </div>
               </div>
               {viewer && viewer.username !== profile.user.username && (
                 <button type="button" className="primary-button" onClick={onFollowToggle} disabled={busy}>
