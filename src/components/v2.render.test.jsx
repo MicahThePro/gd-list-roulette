@@ -482,6 +482,18 @@ console.log('GlobalLeaderboard')
     .every((label) => html.includes(label)))
   check('the board announces itself while loading', html.includes('Loading the global leaderboard'))
   check('the board is a labelled tablist', html.includes('aria-label="Leaderboard board"'))
+  /* A row used to be a span with the personal board's button class, so the
+   * pointer was real and the click was not. The name has to be a button that
+   * opens that player's profile. */
+  const globalSource = readFileSync(new URL('./GlobalLeaderboard.jsx', import.meta.url), 'utf8')
+  check(
+    'a global row opens that player\'s profile',
+    /<button[\s\S]*?className="lb-main"[\s\S]*?onClick=\{\(\) => onOpenProfile\?\.\(entry\.username\)\}/.test(globalSource),
+  )
+  check(
+    'a slower leaderboard response cannot paint over a newer filter',
+    globalSource.includes('seq !== requestSeq.current'),
+  )
   // The first paint is the loading state, since the board has not been read
   // yet. The empty message belongs to the render after the fetch comes back
   // with nothing, which a static render cannot reach.
@@ -696,6 +708,16 @@ console.log('\nThe profanity mask')
   check('an active run tells players to start recording before the first attempt', maskedHtml.includes('Start recording before your first attempt'))
   check('recording advice asks for continuous video showing attempts and results', maskedHtml.includes('one continuous video') && maskedHtml.includes('attempts and their results'))
   check('the active run has no copy-save-code control', !maskedHtml.includes('Copy save code'))
+  /* Give up used to be `onClick={onGiveUp}`. The click event arrived as the
+   * next screen, the app stored that object, and every screen failed to match,
+   * so the page collapsed to the header and the run never reached results. */
+  const rouletteSource = readFileSync(new URL('../pages/RoulettePage.jsx', import.meta.url), 'utf8')
+  check('give up does not forward the click event', rouletteSource.includes('onClick={() => onGiveUp()}'))
+  const appSource = readFileSync(new URL('../App.jsx', import.meta.url), 'utf8')
+  check(
+    'give up ignores anything that is not a screen name',
+    /const destination = Object\.values\(SCREEN\)\.includes\(nextScreen\) \? nextScreen : SCREEN\.RESULTS/.test(appSource),
+  )
   const customHtml = renderToStaticMarkup(
     <RoulettePage
       run={{ ...run, customRunId: 'custom-run-id' }}

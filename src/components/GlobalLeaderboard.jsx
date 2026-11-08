@@ -48,7 +48,7 @@ const formatWhen = (timestamp) => {
  * is every run anybody has submitted. Keeping them apart means a clear-all on
  * one can never be mistaken for clearing the other.
  */
-export default function GlobalLeaderboard({ user }) {
+export default function GlobalLeaderboard({ user, onOpenProfile }) {
   const [board, setBoard] = useState('farthest')
   const [source, setSource] = useState('all')
   /* Which Pointercrate list to narrow to. Empty means no narrowing.
@@ -136,21 +136,64 @@ export default function GlobalLeaderboard({ user }) {
   // server rather than a render-time update. The promise is returned so a caller
   // can catch it -- failures are handled inside as well, so it only ever
   // rejects if the fetch itself is malformed.
+  //
+  // `requestSeq` is the read that is allowed to paint. A slower response for a
+  // filter the player has already left must not overwrite the board they are
+  // looking at now. Aborting is not enough on its own: the catch-up refresh and
+  // the 30s poll each used to start a request nobody aborted, and a response
+  // that resolved in the same turn as abort would still call the setters.
+  const requestSeq = useRef(0)
+  const inflight = useRef(null)
+  // The query the rows on screen belong to. State drives the loading flag; the
+  // ref is what a failed read checks, because that callback cannot see the
+  // state from the render that started it.
+  const loadedRef = useRef(loaded)
   const load = useCallback(
     (signal) => {
+      const seq = ++requestSeq.current
+      inflight.current?.abort()
+      inflight.current = null
+
       /* A refresh asked for while a control is being used is dropped rather than
        * queued. Holding it would only close the popup on the very next tick,
-       * which is the bug this guard exists to stop. */
-      if (isBarBusyRef.current) return Promise.resolve()
-      return fetchLeaderboard({ board, source, parts, signal })
+       * which is the bug this guard exists to stop. The sequence bump above has
+       * already retired whatever was in flight, so that dropped refresh cannot
+       * land later under a different filter. */
+      if (isBarBusyRef.current || signal?.aborted) return Promise.resolve()
+
+      const controller = new AbortController()
+      inflight.current = controller
+      const abortFromCaller = () => controller.abort()
+      signal?.addEventListener('abort', abortFromCaller)
+
+      const query = { board, source, parts }
+      return fetchLeaderboard({ board, source, parts, signal: controller.signal })
         .then((result) => {
+          if (seq !== requestSeq.current || controller.signal.aborted) return
+          loadedRef.current = query
           setData(result)
-          setLoaded({ board, source, parts })
+          setLoaded(query)
           setError('')
         })
         .catch((caught) => {
-          if (caught?.name === 'AbortError') return
+          if (caught?.name === 'AbortError' || seq !== requestSeq.current) return
+          const previous = loadedRef.current
+          const sameQuery = previous.board === query.board
+            && previous.source === query.source
+            && previous.parts === query.parts
           setError(caught?.message ?? 'Could not load the leaderboard.')
+          // A refresh of the board already on screen keeps its rows and shows
+          // the error above them. A failed filter change must not: those rows
+          // belong to the previous filter, and leaving `loaded` stale would
+          // spin on "Loading" forever.
+          if (sameQuery) return
+          loadedRef.current = query
+          setLoaded(query)
+          setData({ entries: [], you: null, personal: null })
+        })
+        .finally(() => {
+          signal?.removeEventListener('abort', abortFromCaller)
+          if (inflight.current === controller) inflight.current = null
         })
     },
     [board, source, parts],
@@ -167,16 +210,28 @@ export default function GlobalLeaderboard({ user }) {
    * Without this the player would be left looking at whatever the board said
    * before they started clicking, with no signal that it was stale. The first
    * run is skipped: the effect above has already loaded for these inputs, and a
-   * duplicate request on every mount is a cost with no reader. */
+   * duplicate request on every mount is a cost with no reader.
+   *
+   * This follows the bar becoming idle, not `load`. Depending on `load` started
+   * a second request on every filter change and threw the controller away, so
+   * the next change could not abort it and a slow response briefly painted the
+   * filter the player had already left. */
+  const loadRef = useRef(load)
+  useEffect(() => {
+    loadRef.current = load
+  }, [load])
+
   const hasLoadedOnce = useRef(false)
   useEffect(() => {
-    if (isBarBusy) return
+    if (isBarBusy) return undefined
     if (!hasLoadedOnce.current) {
       hasLoadedOnce.current = true
-      return
+      return undefined
     }
-    load(new AbortController().signal)
-  }, [isBarBusy, load])
+    const controller = new AbortController()
+    loadRef.current(controller.signal)
+    return () => controller.abort()
+  }, [isBarBusy])
 
   // The board is re-read on a timer rather than cached, because a player who
   // just submitted a run wants to see themselves on it. Half a minute is long
@@ -261,9 +316,13 @@ export default function GlobalLeaderboard({ user }) {
 
       {error && <div className="validation-message">{error}</div>}
 
-      {isLoading && !data && <p className="global-board-message">Loading the global leaderboard...</p>}
+      {/* Rows stay hidden until they belong to the filter on screen. `loaded`
+          already disagrees with the selection the moment it changes, but the
+          previous response was left painted underneath, so a fast click through
+          the chips showed the last board for a moment under the new one. */}
+      {isLoading && <p className="global-board-message">Loading the global leaderboard...</p>}
 
-      {data && data.personal && (
+      {!isLoading && data && data.personal && (
         <p className="lb-note">
           You have submitted {data.personal.runs} run{data.personal.runs === 1 ? '' : 's'}, best{' '}
           {data.personal.best}%
@@ -271,14 +330,14 @@ export default function GlobalLeaderboard({ user }) {
         </p>
       )}
 
-      {data && data.entries.length === 0 && !error && (
+      {!isLoading && data && data.entries.length === 0 && !error && (
         <p className="global-board-message">
           No runs on this board yet. Sign in and submit one from the results screen.
         </p>
       )}
 
       <div className="lb-list">
-        {(data?.entries ?? []).map((entry) => {
+        {!isLoading && (data?.entries ?? []).map((entry) => {
           const isYou = user && entry.username === user.username
           return (
             <div
@@ -286,7 +345,15 @@ export default function GlobalLeaderboard({ user }) {
               className={isYou ? 'lb-row lb-row-you' : 'lb-row'}
             >
               <span className="lb-rank">#{entry.rank}</span>
-              <span className="lb-main">
+              {/* The same button class the personal board uses. It was a span
+                  here, so it inherited the pointer and did nothing with it.
+                  The name is the player's profile. */}
+              <button
+                type="button"
+                className="lb-main"
+                onClick={() => onOpenProfile?.(entry.username)}
+                aria-label={`Open @${entry.username}'s profile`}
+              >
                 <span className="lb-top">
                   {/* The display name is what the player chose to be known by, so
                       it leads. The @handle follows it because the two are not the
@@ -314,7 +381,7 @@ export default function GlobalLeaderboard({ user }) {
                   {entry.percentStep !== 1 ? ` · +${entry.percentStep}% steps` : ''} ·{' '}
                   {STATUS_LABELS[entry.status] ?? entry.status}
                 </span>
-              </span>
+              </button>
               <strong className="lb-pct">{entry.score}%</strong>
             </div>
           )

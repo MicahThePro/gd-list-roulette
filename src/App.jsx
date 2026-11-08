@@ -515,7 +515,12 @@ function App() {
       gaveUp: true,
       gaveUpAt: Date.now(),
     }
-    endRun(failedRun, Date.now(), nextScreen)
+    // A button passes its click event to its handler. Treat only known screen
+    // names as explicit destinations; otherwise Give up would store the event
+    // object as `screen` and leave only the header rendered, so the run never
+    // reaches the results screen where it can be saved.
+    const destination = Object.values(SCREEN).includes(nextScreen) ? nextScreen : SCREEN.RESULTS
+    endRun(failedRun, Date.now(), destination)
   }
 
   /* Ends a run because a time limit ran out, rather than because the player
