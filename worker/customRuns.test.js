@@ -16,7 +16,7 @@ const check = (name, condition, detail = '') => {
 }
 
 const call = async (path, { method = 'GET', body, token } = {}) => {
-  const headers = { 'x-dlr-protocol': '2' }
+  const headers = { 'x-dlr-protocol': '3' }
   if (body !== undefined) headers['content-type'] = 'application/json'
   if (token) headers.authorization = `Bearer ${token}`
   const response = await worker.fetch(

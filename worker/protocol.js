@@ -42,7 +42,7 @@ export const PROTOCOL_HEADER = 'x-dlr-protocol'
  * which is the intent -- those runs would otherwise be scored and ranked by rules
  * that no longer exist.
  */
-export const PROTOCOL_VERSION = '2'
+export const PROTOCOL_VERSION = '3'
 
 /** The value the current build sends. */
 export const PROTOCOL_VALUE = PROTOCOL_VERSION
