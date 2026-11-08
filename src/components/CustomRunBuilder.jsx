@@ -11,6 +11,7 @@ import {
 } from '../services/listService'
 import { createCustomRun } from '../services/customRunService'
 import { censorText } from '../utils/censor'
+import { useTranslate } from '../i18n/useTranslate.js'
 
 const SOURCE_OPTIONS = [
   { id: 'pointercrate', name: LIST_SOURCES.POINTERCRATE },
@@ -49,6 +50,7 @@ const getShareUrl = (id) => {
 }
 
 export default function CustomRunBuilder({ user, onClose, onOpenRun }) {
+  const { t } = useTranslate()
   const [source, setSource] = useState('pointercrate')
   const [sourceLevels, setSourceLevels] = useState([])
   const [isLoadingLevels, setIsLoadingLevels] = useState(true)
@@ -85,7 +87,7 @@ export default function CustomRunBuilder({ user, onClose, onOpenRun }) {
         if (active) setSourceLevels(result.levels)
       })
       .catch((error) => {
-        if (active) setSourceError(error?.message ?? 'Could not load that list.')
+        if (active) setSourceError(error?.message ?? t('builder.loadListFailed'))
       })
       .finally(() => {
         if (active) setIsLoadingLevels(false)
@@ -93,7 +95,7 @@ export default function CustomRunBuilder({ user, onClose, onOpenRun }) {
     return () => {
       active = false
     }
-  }, [source])
+  }, [source, t])
 
   useEffect(() => {
     let active = true
@@ -125,7 +127,7 @@ export default function CustomRunBuilder({ user, onClose, onOpenRun }) {
           })
         }
       } catch (error) {
-        if (active) setSourceError(error?.message ?? 'Could not load level details.')
+        if (active) setSourceError(error?.message ?? t('builder.loadDetailsFailed'))
       } finally {
         if (active) setIsLoadingPreview(false)
       }
@@ -135,7 +137,7 @@ export default function CustomRunBuilder({ user, onClose, onOpenRun }) {
     return () => {
       active = false
     }
-  }, [selectedPreview, source])
+  }, [selectedPreview, source, t])
 
   const addLevel = () => {
     if (!preview || levels.length >= maximumLevels) return
@@ -170,7 +172,7 @@ export default function CustomRunBuilder({ user, onClose, onOpenRun }) {
       })
       setCreatedUrl(getShareUrl(id))
     } catch (error) {
-      setMessage(error?.message ?? 'Could not create this custom run.')
+      setMessage(error?.message ?? t('builder.createFailed'))
     } finally {
       setIsCreating(false)
     }
@@ -179,9 +181,9 @@ export default function CustomRunBuilder({ user, onClose, onOpenRun }) {
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(createdUrl)
-      setMessage('Challenge link copied.')
+      setMessage(t('builder.linkCopied'))
     } catch {
-      setMessage('Copy failed. Select and copy the link above.')
+      setMessage(t('builder.copyFailed'))
     }
   }
 
@@ -227,25 +229,29 @@ export default function CustomRunBuilder({ user, onClose, onOpenRun }) {
       >
         <header className="custom-run-builder-head">
           <div>
-            <p className="eyebrow">Custom challenge</p>
-            <h2 id="custom-run-builder-title">Build a run for others</h2>
-            <p>Signed in as @{user.username}. Your challenge uses its own rules and ordered levels.</p>
+            <p className="eyebrow">{t('custom.eyebrow')}</p>
+            <h2 id="custom-run-builder-title">{t('builder.title')}</h2>
+            <p>{t('builder.signedInAs', { username: user.username })}</p>
           </div>
-          <button type="button" className="secondary-button small-button" onClick={onClose}>Close</button>
+          <button type="button" className="secondary-button small-button" onClick={onClose}>
+            {t('common.close')}
+          </button>
         </header>
 
         {createdUrl ? (
           <div className="custom-run-share">
-            <h3>Your run is ready</h3>
-            <p>Anyone with this unlisted link can play. The level order is not shown before they start.</p>
+            <h3>{t('builder.ready')}</h3>
+            <p>{t('builder.readyHint')}</p>
             <label>
-              Challenge link
+              {t('builder.challengeLink')}
               <input readOnly value={createdUrl} onFocus={(event) => event.target.select()} />
             </label>
             {message && <p className="export-status" role="status">{message}</p>}
             <div className="action-row">
-              <button type="button" className="primary-button" onClick={copyLink}>Copy link</button>
-              <button type="button" className="secondary-button" onClick={() => onOpenRun(createdUrl)}>Open challenge</button>
+              <button type="button" className="primary-button" onClick={copyLink}>{t('builder.copyLink')}</button>
+              <button type="button" className="secondary-button" onClick={() => onOpenRun(createdUrl)}>
+                {t('builder.openChallenge')}
+              </button>
             </div>
           </div>
         ) : (
@@ -253,7 +259,7 @@ export default function CustomRunBuilder({ user, onClose, onOpenRun }) {
             <div className="custom-run-columns">
               <div className="custom-run-editor">
                 <label className="settings-field">
-                  List source
+                  {t('builder.listSource')}
                   <select value={source} onChange={(event) => changeSource(event.target.value)}>
                     {SOURCE_OPTIONS.map((option) => (
                       <option key={option.id} value={option.id}>{censorText(option.name)}</option>
@@ -263,7 +269,7 @@ export default function CustomRunBuilder({ user, onClose, onOpenRun }) {
 
                 <div className="custom-run-rank-field">
                   <label className="settings-field" htmlFor="custom-run-rank">
-                    Add a level by its list rank
+                    {t('builder.addByRank')}
                     <input
                       id="custom-run-rank"
                       type="number"
@@ -272,28 +278,33 @@ export default function CustomRunBuilder({ user, onClose, onOpenRun }) {
                       value={rankDraft}
                       onChange={(event) => changeRank(event.target.value)}
                       disabled={isLoadingLevels}
-                      placeholder={isLoadingLevels ? 'Loading list…' : 'Enter a rank'}
+                      placeholder={isLoadingLevels ? t('builder.loadingList') : t('builder.enterRank')}
                     />
                   </label>
-                  {isLoadingLevels && <p className="settings-hint">Loading list ranks…</p>}
+                  {isLoadingLevels && <p className="settings-hint">{t('builder.loadingRanks')}</p>}
                   {sourceError && <p className="validation-message" role="alert">{sourceError}</p>}
                   {preview && (
                     <div className="custom-run-preview">
                       {preview.thumbnail ? (
                         <img src={preview.thumbnail} alt="" loading="lazy" />
                       ) : (
-                        <div className="custom-run-preview-placeholder">Thumbnail unavailable</div>
+                        <div className="custom-run-preview-placeholder">{t('builder.thumbUnavailable')}</div>
                       )}
                       <div>
                         <strong>{censorText(preview.name)}</strong>
-                        <span>By {censorText(preview.creator || 'Unknown creator')}</span>
-                        <small>Rank #{preview.position}{preview.levelId ? ` · Level ID ${preview.levelId}` : ''}</small>
+                        <span>{t('builder.byCreator', { creator: censorText(preview.creator || t('roulette.unknownCreator')) })}</span>
+                        <small>
+                          {t('builder.rankLine', {
+                            position: preview.position,
+                            levelId: preview.levelId ? t('builder.levelIdSuffix', { levelId: preview.levelId }) : '',
+                          })}
+                        </small>
                       </div>
                     </div>
                   )}
-                  {isLoadingPreview && <p className="settings-hint">Loading level details…</p>}
+                  {isLoadingPreview && <p className="settings-hint">{t('builder.loadingDetails')}</p>}
                   {rankDraft && !preview && !isLoadingLevels && (
-                    <p className="settings-hint">No level found at that rank in this source.</p>
+                    <p className="settings-hint">{t('builder.noLevelAtRank')}</p>
                   )}
                   <button
                     type="button"
@@ -301,14 +312,14 @@ export default function CustomRunBuilder({ user, onClose, onOpenRun }) {
                     onClick={addLevel}
                     disabled={!preview || isLoadingPreview || levels.length >= maximumLevels}
                   >
-                    Add level {levels.length + 1}
+                    {t('builder.addLevel', { number: levels.length + 1 })}
                   </button>
                 </div>
 
                 <div className="custom-run-rules">
-                  <h3>Rules for this challenge</h3>
+                  <h3>{t('builder.rulesHeading')}</h3>
                   <label className="settings-field">
-                    Percentage increment
+                    {t('settings.percentIncrement')}
                     <input
                       type="number"
                       min="1"
@@ -317,18 +328,18 @@ export default function CustomRunBuilder({ user, onClose, onOpenRun }) {
                       value={percentStep}
                       onChange={(event) => stepChanged(event.target.value)}
                     />
-                    <small>{maximumLevels} levels maximum at this increment. Fewer levels end the run when the final one is cleared.</small>
+                    <small>{t('builder.maxLevels', { count: maximumLevels })}</small>
                   </label>
                   <label className="settings-toggle-row">
                     <input type="checkbox" checked={allowSkip} onChange={(event) => setAllowSkip(event.target.checked)} />
-                    <span><strong>Allow skipping</strong></span>
+                    <span><strong>{t('settings.allowSkipping')}</strong></span>
                   </label>
                   <label className="settings-field">
-                    Time limit per level (minutes)
+                    {t('builder.timeLimitPerLevel')}
                     <input type="number" min="0" max="10080" value={levelTimeLimitMinutes} onChange={(event) => setLevelTimeLimitMinutes(Number(event.target.value))} />
                   </label>
                   <label className="settings-field">
-                    Time limit for the whole run (minutes)
+                    {t('builder.timeLimitTotal')}
                     <input type="number" min="0" max="10080" value={totalTimeLimitMinutes} onChange={(event) => setTotalTimeLimitMinutes(Number(event.target.value))} />
                   </label>
                 </div>
@@ -337,8 +348,8 @@ export default function CustomRunBuilder({ user, onClose, onOpenRun }) {
               <div className="custom-run-order">
                 <div className="custom-run-order-head">
                   <div>
-                    <h3>Level order</h3>
-                    <p>{levels.length} of {maximumLevels} levels added</p>
+                    <h3>{t('builder.orderHeading')}</h3>
+                    <p>{t('builder.levelsAdded', { count: levels.length, max: maximumLevels })}</p>
                   </div>
                 </div>
                 {levels.length ? (
@@ -347,32 +358,32 @@ export default function CustomRunBuilder({ user, onClose, onOpenRun }) {
                       <li key={`${level.id}-${index}`}>
                         <span>{index + 1}. {censorText(level.name)} <small>#{level.position}</small></span>
                         <div>
-                          <button type="button" aria-label={`Move ${level.name} up`} disabled={index === 0} onClick={() => moveLevel(index, -1)}>↑</button>
-                          <button type="button" aria-label={`Move ${level.name} down`} disabled={index === levels.length - 1} onClick={() => moveLevel(index, 1)}>↓</button>
-                          <button type="button" aria-label={`Remove ${level.name}`} onClick={() => setLevels((current) => current.filter((_, itemIndex) => itemIndex !== index))}>×</button>
+                          <button type="button" aria-label={t('builder.moveUp', { name: level.name })} disabled={index === 0} onClick={() => moveLevel(index, -1)}>↑</button>
+                          <button type="button" aria-label={t('builder.moveDown', { name: level.name })} disabled={index === levels.length - 1} onClick={() => moveLevel(index, 1)}>↓</button>
+                          <button type="button" aria-label={t('builder.remove', { name: level.name })} onClick={() => setLevels((current) => current.filter((_, itemIndex) => itemIndex !== index))}>×</button>
                         </div>
                       </li>
                     ))}
                   </ol>
                 ) : (
-                  <p className="settings-note">Choose a rank to preview its level, then add it here. Players will see levels one at a time.</p>
+                  <p className="settings-note">{t('builder.orderEmpty')}</p>
                 )}
                 <p className="settings-hint">
-                  Players start at {percentStep}% and advance by {percentStep}% after each clear. They do not see the level order before playing.
+                  {t('builder.orderHint', { step: percentStep })}
                 </p>
               </div>
             </div>
 
             {message && <p className="validation-message" role="alert">{message}</p>}
             <div className="action-row custom-run-builder-actions">
-              <button type="button" className="secondary-button" onClick={onClose}>Cancel</button>
+              <button type="button" className="secondary-button" onClick={onClose}>{t('common.cancel')}</button>
               <button
                 type="button"
                 className="primary-button"
                 onClick={handleCreate}
                 disabled={isCreating || levels.length === 0 || levels.length > maximumLevels}
               >
-                {isCreating ? 'Creating…' : 'Finish and create link'}
+                {isCreating ? t('builder.creating') : t('builder.createLink')}
               </button>
             </div>
           </div>

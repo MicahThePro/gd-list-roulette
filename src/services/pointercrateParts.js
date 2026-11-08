@@ -36,6 +36,7 @@ export const POINTERCRATE_PARTS = [
   {
     id: 'main',
     label: 'Main list',
+    key: 'lists.pointercrateMain',
     from: 1,
     to: 75,
     // Shown under the tick boxes. Deliberately short: three of these sit in a
@@ -45,6 +46,7 @@ export const POINTERCRATE_PARTS = [
   {
     id: 'extended',
     label: 'Extended list',
+    key: 'lists.pointercrateExtended',
     from: 76,
     to: 150,
     note: 'The rest of the ranked list, positions 76 to 150.',
@@ -52,6 +54,7 @@ export const POINTERCRATE_PARTS = [
   {
     id: 'legacy',
     label: 'Legacy list',
+    key: 'lists.pointercrateLegacy',
     from: 151,
     to: 702,
     note: 'Everything that has since been pushed off the list. Positions 151 and below.',

@@ -1,4 +1,5 @@
 import { normalizePointercrateParts } from '../services/pointercrateParts.js'
+import { translate } from '../i18n/i18n.js'
 
 export const clampPercent = (value) => {
   const number = Number(value)
@@ -136,11 +137,11 @@ export const pickNextLevel = (levels = [], usedLevelIds = [], allowDuplicates = 
 // treated as a fixed vocabulary: a new value can be added, but changing one
 // would orphan the reasons already in people's histories.
 export const SKIP_REASONS = [
-  { id: 'too-hard', label: 'Too hard' },
-  { id: 'bad-luck', label: 'Bad luck' },
-  { id: 'unfair', label: 'Unfair / glitched' },
-  { id: 'no-time', label: 'No time' },
-  { id: 'not-feeling-it', label: 'Not feeling it' },
+  { id: 'too-hard', label: 'Too hard', key: 'skip.tooHard' },
+  { id: 'bad-luck', label: 'Bad luck', key: 'skip.badLuck' },
+  { id: 'unfair', label: 'Unfair / glitched', key: 'skip.unfair' },
+  { id: 'no-time', label: 'No time', key: 'skip.noTime' },
+  { id: 'not-feeling-it', label: 'Not feeling it', key: 'skip.notFeelingIt' },
 ]
 const SKIP_REASON_IDS = new Set(SKIP_REASONS.map((reason) => reason.id))
 export const DEFAULT_SKIP_REASON = 'too-hard'
@@ -150,8 +151,18 @@ export const DEFAULT_SKIP_REASON = 'too-hard'
 export const normalizeSkipReason = (reason) =>
   SKIP_REASON_IDS.has(reason) ? reason : null
 
-export const getSkipReasonLabel = (reason) =>
-  SKIP_REASONS.find((entry) => entry.id === reason)?.label ?? 'Skipped'
+/* Why a level was skipped, in the current language.
+ *
+ * `label` above is the English text, kept as the fallback for the one caller that
+ * has no language available (a node-side test, and the worker's own copy of this
+ * vocabulary). Everything on screen goes through here so the reason reads in the
+ * language the player picked. The ids are data and never change, so a run recorded
+ * in one language still shows its reason in another. */
+export const getSkipReasonLabel = (reason) => {
+  const entry = SKIP_REASONS.find((candidate) => candidate.id === reason)
+  if (!entry) return 'Skipped'
+  return translate(entry.key) || entry.label
+}
 
 /* Rolls one recorded reason into a per-reason tally stored on the run. A run
    created before skip reasons were tracked has no tally at all, so the missing
@@ -184,15 +195,15 @@ export const createLevelResult = ({ level, targetPercent, achievedPercent, resul
 }
 
 export const summarizeResult = (run) => {
-  if (!run) return 'No run in progress.'
+  if (!run) return translate('status.noRun')
 
   if (run.status === 'completed') {
-    return 'You cleared the roulette and reached 100%.'
+    return translate('status.completed')
   }
 
   if (run.status === 'failed') {
-    return `You failed the ${run.currentTarget}% target and the run ended.`
+    return translate('status.failed', { target: run.currentTarget })
   }
 
-  return `Current target: ${run.currentTarget}%`
+  return translate('status.active', { target: run.currentTarget })
 }

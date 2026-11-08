@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { fetchNotifications, markNotificationRead } from '../services/apiService'
+import { useTranslate } from '../i18n/useTranslate.js'
 
 export default function NotificationsPage({ viewer, onNotificationChange, onOpenProfile, onBack }) {
+  const { t } = useTranslate()
   const [items, setItems] = useState([])
   const [error, setError] = useState('')
 
@@ -12,7 +14,7 @@ export default function NotificationsPage({ viewer, onNotificationChange, onOpen
       setItems(result.notifications ?? [])
       onNotificationChange?.()
     } catch (caught) {
-      setError(caught?.message ?? 'Could not load notifications.')
+      setError(caught?.message ?? t('notifications.loadFailed'))
     }
   }
 
@@ -38,20 +40,20 @@ export default function NotificationsPage({ viewer, onNotificationChange, onOpen
       <section className="panel hero-panel hero-panel-wide">
         <header className="board-page-bar">
           <div>
-            <p className="eyebrow">Alerts</p>
-            <h2>Notifications</h2>
+            <p className="eyebrow">{t('notifications.eyebrow')}</p>
+            <h2>{t('notifications.title')}</h2>
           </div>
           <button type="button" className="secondary-button" onClick={onBack}>
-            Back home
+            {t('profile.backHome')}
           </button>
         </header>
 
-        {!viewer && <p className="settings-note">Sign in to receive notifications.</p>}
+        {!viewer && <p className="settings-note">{t('notifications.signIn')}</p>}
         {error && <div className="validation-message">{error}</div>}
 
         <div className="notification-list">
           {(items ?? []).length === 0 && viewer && (
-            <p className="lb-empty">No notifications yet.</p>
+            <p className="lb-empty">{t('notifications.none')}</p>
           )}
           {(items ?? []).map((item) => (
             <button
@@ -61,7 +63,7 @@ export default function NotificationsPage({ viewer, onNotificationChange, onOpen
               onClick={() => handleOpen(item)}
             >
               <strong>@{item.actorUsername}</strong>
-              <span>followed you</span>
+              <span>{t('notifications.followedYou')}</span>
               <small>{new Date(item.createdAt).toLocaleString()}</small>
             </button>
           ))}

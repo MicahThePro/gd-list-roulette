@@ -15,6 +15,21 @@
 export const SITE_NAME = 'GD List Roulette'
 export const CHANGELOG = [
   {
+    id: 'v2-7',
+    version: 'v2.7',
+    title: 'The site now speaks five languages',
+    summary: 'Every screen on the site can be read in English, Spanish, Mandarin Chinese, French or Hindi. Pick yours at the bottom of the main menu and the whole site changes with it.',
+    changes: [
+      'There is now a language row at the bottom of the main menu, with five choices: English, Spanish, Mandarin Chinese, French and Hindi. Click one and the entire site changes to that language immediately -- the menu, the run screen, the results, both leaderboards, profiles, notifications, settings, the account and custom-run windows, the connection symbol, and every message and error.',
+      'Your choice is remembered in this browser for a year, the same way your other settings are, so you only pick it once. A first-time visitor with no saved choice is put in the language their browser is set to when the site offers one, and otherwise in English.',
+      'Each language name in the picker is written in that language, so somebody who cannot yet read the page can still find their own option. Changing the language also updates the page\'s language setting for screen readers, so text is read out in the right voice rather than in English pronunciation.',
+      'Level names and the names of the people who made them are never translated. Those belong to the people who wrote them: a level called Bloodbath is Bloodbath in every language, and its creator is credited under the name they chose. The same goes for list names, since those are also the values your runs are recorded under.',
+      'The language applies to the words the site wrote. It deliberately does not cover the admin panel, which stays in English because it is moderator tooling rather than part of the site, and it does not cover the release notes in this window, which remain in the language they were written in.',
+      'If a translation is ever missing for a particular phrase, that phrase falls back to English rather than showing a gap or an error, so the site is never half-broken in any language.',
+      'v2.6 is preserved as a frozen build under versions/v2.6. Like the older archives it remains fully playable, but it cannot sign in, submit runs or reach the leaderboard, because the current server refuses older builds.',
+    ],
+  },
+  {
     id: 'v2-6',
     version: 'v2.6',
     title: 'Build and share custom ordered runs',

@@ -38,7 +38,7 @@ const check = (name, condition, detail = '') => {
 const call = (env, path, { method = 'GET', body, token, cookie } = {}) => {
   // The version gate refuses any /api call without the protocol header, so every
   // test here sends it by default.
-  const headers = { 'x-dlr-protocol': '2' }
+  const headers = { 'x-dlr-protocol': '3' }
   if (body !== undefined) headers['content-type'] = 'application/json'
   if (token) headers.authorization = `Bearer ${token}`
   if (cookie) headers.cookie = cookie

@@ -33,11 +33,11 @@ export const SUBMITTABLE_SOURCES = Object.values(LIST_SOURCES)
 
 /** The boards the global leaderboard can be sorted by. */
 export const LEADERBOARD_BOARDS = [
-  { id: 'farthest', label: 'Farthest %' },
-  { id: 'levels', label: 'Most levels cleared' },
-  { id: 'fastest', label: 'Fastest run' },
-  { id: 'clean', label: 'Fewest skips' },
-  { id: 'recent', label: 'Most recent' },
+  { id: 'farthest', label: 'Farthest %', labelKey: 'global.boardFarthest' },
+  { id: 'levels', label: 'Most levels cleared', labelKey: 'global.boardLevels' },
+  { id: 'fastest', label: 'Fastest run', labelKey: 'global.boardFastest' },
+  { id: 'clean', label: 'Fewest skips', labelKey: 'global.boardClean' },
+  { id: 'recent', label: 'Most recent', labelKey: 'global.boardRecent' },
 ]
 
 export class ApiError extends Error {

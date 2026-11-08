@@ -2,18 +2,25 @@ import { useEffect, useMemo, useState } from 'react'
 import { fetchUserProfile, followUser, searchUsers, unfollowUser } from '../services/apiService'
 import { censorText } from '../utils/censor'
 import { getBadgeTextColor } from '../utils/profileBadges'
+import { useTranslate } from '../i18n/useTranslate.js'
 
 const PAGE_SIZE = 12
 
-const formatWhen = (value) => {
-  if (!value) return 'Recently'
+/* Rendered in the reader's own locale rather than a translated string: a date is
+ * a number and a month name, not copy, and forcing it through the catalogue would
+ * mean five hand-maintained date formats to keep in step with the browser. */
+const formatWhen = (value, recentLabel) => {
+  if (!value) return recentLabel
   const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? 'Recently' : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+  return Number.isNaN(date.getTime())
+    ? recentLabel
+    : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 const sortRuns = (runs = []) => [...runs].sort((a, b) => new Date(b.createdAt ?? 0) - new Date(a.createdAt ?? 0))
 
 export default function ProfilePage({ username, viewer, relationshipVersion, onRelationshipChange, onOpenProfile, onBack }) {
+  const { t } = useTranslate()
   const [profile, setProfile] = useState(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -35,7 +42,7 @@ export default function ProfilePage({ username, viewer, relationshipVersion, onR
       const result = await fetchUserProfile(nextUsername || 'geometricalmike')
       setProfile(result)
     } catch (caught) {
-      setError(caught?.message ?? 'That profile could not be loaded.')
+      setError(caught?.message ?? t('profile.loadFailed'))
       setProfile(null)
     }
   }
@@ -52,7 +59,7 @@ export default function ProfilePage({ username, viewer, relationshipVersion, onR
       setSearchResults([])
       setTotalPages(1)
       setTotalUsers(0)
-      setError(caught?.message ?? 'Could not search for that user.')
+      setError(caught?.message ?? t('profile.searchFailed'))
     }
   }
 
@@ -108,7 +115,7 @@ export default function ProfilePage({ username, viewer, relationshipVersion, onR
 
       onRelationshipChange?.()
     } catch (caught) {
-      setError(caught?.message ?? 'Could not update that relationship.')
+      setError(caught?.message ?? t('profile.relationshipFailed'))
     } finally {
       setBusy(false)
     }
@@ -135,17 +142,17 @@ export default function ProfilePage({ username, viewer, relationshipVersion, onR
       <section className="panel hero-panel hero-panel-wide">
         <header className="board-page-bar">
           <div>
-            <p className="eyebrow">Community</p>
-            <h2>Profiles</h2>
+            <p className="eyebrow">{t('profile.eyebrow')}</p>
+            <h2>{t('profile.title')}</h2>
           </div>
           <button type="button" className="secondary-button" onClick={onBack}>
-            Back home
+            {t('profile.backHome')}
           </button>
         </header>
 
         <form className="setup-form" onSubmit={handleSearch}>
           <label>
-            Search users
+            {t('profile.searchUsers')}
             <input
               value={query}
               onChange={(event) => {
@@ -156,11 +163,11 @@ export default function ProfilePage({ username, viewer, relationshipVersion, onR
                 const next = query.trim() || 'geometricalmike'
                 if (next !== query) setQuery(next)
               }}
-              placeholder="Type a letter or username"
+              placeholder={t('profile.searchPlaceholder')}
             />
           </label>
           <div className="action-row">
-            <button type="submit" className="primary-button">Open profile</button>
+            <button type="submit" className="primary-button">{t('profile.openProfile')}</button>
           </div>
         </form>
 
@@ -179,13 +186,13 @@ export default function ProfilePage({ username, viewer, relationshipVersion, onR
                   <span className="user-card-avatar">@</span>
                   <strong>{user.displayName || user.username}</strong>
                   <small>@{user.username}</small>
-                  <span>{user.followerCount} followers</span>
+                  <span>{t('profile.followersSuffix', { count: user.followerCount })}</span>
                 </button>
               ))}
             </div>
 
             {totalPages > 1 && (
-              <div className="pagination" aria-label="User search pages">
+              <div className="pagination" aria-label={t('profile.userPagesAria')}>
                 {Array.from({ length: totalPages }, (_, index) => index + 1).map((num) => (
                   <button
                     key={num}
@@ -199,7 +206,9 @@ export default function ProfilePage({ username, viewer, relationshipVersion, onR
               </div>
             )}
 
-            <p className="settings-note">{totalUsers} matching users · page {page} of {totalPages}</p>
+            <p className="settings-note">
+              {t('profile.matchingUsers', { count: totalUsers, page, total: totalPages })}
+            </p>
           </div>
         )}
 
@@ -207,11 +216,11 @@ export default function ProfilePage({ username, viewer, relationshipVersion, onR
           <div className="profile-card">
             <div className="profile-header">
               <div>
-                <p className="eyebrow">Player</p>
+                <p className="eyebrow">{t('profile.player')}</p>
                 <h3>{profile.user.displayName || profile.user.username}</h3>
                 <p className="account-handle">@{profile.user.username}</p>
                 {profile.user.badges?.length > 0 && (
-                  <div className="profile-badges" aria-label="Profile badges">
+                  <div className="profile-badges" aria-label={t('profile.badgesAria')}>
                     {profile.user.badges.map((badge) => (
                       <span
                         className="profile-badge"
@@ -226,28 +235,31 @@ export default function ProfilePage({ username, viewer, relationshipVersion, onR
               </div>
               {viewer && viewer.username !== profile.user.username && (
                 <button type="button" className="primary-button" onClick={onFollowToggle} disabled={busy}>
-                  {profile.user.isFollowing ? 'Following' : 'Follow'}
+                  {profile.user.isFollowing ? t('profile.following') : t('profile.follow')}
                 </button>
               )}
             </div>
 
             <div className="profile-summary">
-              <div><strong>{profile.user.followerCount}</strong><span>Followers</span></div>
-              <div><strong>{profile.user.followingCount}</strong><span>Following</span></div>
-              <div><strong>{sortedRuns.length}</strong><span>Accepted runs</span></div>
-              <div><strong>{formatWhen(profile.user.createdAt)}</strong><span>Joined</span></div>
+              <div><strong>{profile.user.followerCount}</strong><span>{t('profile.followers')}</span></div>
+              <div><strong>{profile.user.followingCount}</strong><span>{t('profile.followingCount')}</span></div>
+              <div><strong>{sortedRuns.length}</strong><span>{t('profile.acceptedRuns')}</span></div>
+              <div>
+                <strong>{formatWhen(profile.user.createdAt, t('common.recently'))}</strong>
+                <span>{t('profile.joined')}</span>
+              </div>
             </div>
 
             <div className="leaderboard">
               <div className="lb-tabs">
-                <span className="lb-filter lb-filter-active">Accepted global runs</span>
+                <span className="lb-filter lb-filter-active">{t('profile.acceptedGlobalRuns')}</span>
               </div>
               {sortedRuns.length === 0 ? (
-                <p className="lb-empty">This player has no accepted public runs yet.</p>
+                <p className="lb-empty">{t('profile.noAcceptedRuns')}</p>
               ) : (
                 <div className="profile-run-panel">
                   {totalRunPages > 1 && (
-                    <div className="profile-run-nav" aria-label="Run pages">
+                    <div className="profile-run-nav" aria-label={t('profile.runPagesAria')}>
                       <button
                         type="button"
                         className="page-button"
@@ -277,7 +289,7 @@ export default function ProfilePage({ username, viewer, relationshipVersion, onR
                           <div className="profile-run-score">{entry.score}%</div>
                           <div className="profile-run-source">{censorText(entry.source)}</div>
                           <div className="profile-run-meta">
-                            {entry.passed} cleared · {entry.roundsPlayed} played
+                            {t('profile.runMeta', { passed: entry.passed, played: entry.roundsPlayed })}
                           </div>
                           <div className="profile-run-number">#{runNumber}</div>
                         </div>

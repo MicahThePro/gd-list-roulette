@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { formatCooldown, useCooldownRemaining } from '../hooks/useCooldownRemaining'
+import { useTranslate } from '../i18n/useTranslate.js'
 
 const MIN_PASSWORD_LENGTH = 8
 /* Matches the Worker's MAX_DISPLAY_NAME. Capping here as well is a courtesy
@@ -31,6 +32,7 @@ const MAX_DISPLAY_NAME = 40
  * checkbox.
  */
 export default function AccountDialog({ isOpen, onClose, auth, pendingRun = null, onAuthenticated, onSignedOut }) {
+  const { t } = useTranslate()
   const { user, isRestoring, isBusy, error, setError, signIn, signUp, signOut, changeDisplayName } = auth
   const [mode, setMode] = useState('signin')
   const [username, setUsername] = useState('')
@@ -168,25 +170,24 @@ export default function AccountDialog({ isOpen, onClose, auth, pendingRun = null
         className="modal account-dialog"
         role="dialog"
         aria-modal="true"
-        aria-label="Your account"
+        aria-label={t('account.yourAccount')}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="modal-actions">
-          <h2>{user ? 'Your account' : isSignUp ? 'Create an account' : 'Sign in'}</h2>
+          <h2>{user ? t('account.yourAccount') : isSignUp ? t('account.createAccount') : t('account.signIn')}</h2>
           <button type="button" className="secondary-button small-button" onClick={handleClose}>
-            Close
+            {t('common.close')}
           </button>
         </div>
 
-        {isRestoring && !user && <p className="settings-note">Checking your saved sign in...</p>}
+        {isRestoring && !user && <p className="settings-note">{t('account.checking')}</p>}
 
         {user ? (
           <div className="account-panel">
             <p className="account-name">{user.displayName}</p>
             <p className="account-handle">@{user.username}</p>
             <p className="settings-note">
-              Signed in as <strong>@{user.username}</strong>. Your runs are submitted from the
-              results screen and appear on the global leaderboard.
+              {t('account.signedInAs', { username: user.username })}
             </p>
 
             {/* The display name editor.
@@ -198,7 +199,7 @@ export default function AccountDialog({ isOpen, onClose, auth, pendingRun = null
             {isEditingName ? (
               <form className="account-name-form" onSubmit={handleSaveName}>
                 <label>
-                  Display name
+                  {t('account.displayName')}
                   <input
                     type="text"
                     value={nameDraft}
@@ -209,22 +210,19 @@ export default function AccountDialog({ isOpen, onClose, auth, pendingRun = null
                        wait. The server refuses it either way. */
                     disabled={isLocked || isBusy}
                     onChange={(event) => setNameDraft(event.target.value)}
-                    placeholder="shown on the leaderboard"
+                    placeholder={t('account.displayNamePlaceholder')}
                   />
                 </label>
 
                 {isLocked && (
                   <p className="settings-note account-cooldown">
-                    You can change your display name again in{' '}
-                    <strong>{formatCooldown(remainingMs)}</strong>. It unlocks on its own -- no
-                    need to reload the page.
+                    {t('account.cooldownIn', { time: formatCooldown(remainingMs) })}
                   </p>
                 )}
 
                 {!isLocked && (
                   <p className="settings-note">
-                    This is the name shown on the leaderboard. You can change it once a day; your
-                    username @{user.username} does not change.
+                    {t('account.nameDailyNote', { username: user.username })}
                   </p>
                 )}
 
@@ -232,7 +230,7 @@ export default function AccountDialog({ isOpen, onClose, auth, pendingRun = null
 
                 <div className="modal-actions">
                   <button type="submit" className="primary-button" disabled={!canSaveName}>
-                    {isBusy ? 'Saving...' : 'Save display name'}
+                    {isBusy ? t('results.saving') : t('account.saveDisplayName')}
                   </button>
                   <button
                     type="button"
@@ -240,7 +238,7 @@ export default function AccountDialog({ isOpen, onClose, auth, pendingRun = null
                     onClick={handleCancelName}
                     disabled={isBusy}
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                 </div>
               </form>
@@ -255,11 +253,11 @@ export default function AccountDialog({ isOpen, onClose, auth, pendingRun = null
                      can see when it comes back rather than having to try. */
                   disabled={isLocked}
                 >
-                  Change display name
+                  {t('account.changeDisplayName')}
                 </button>
                 {isLocked && (
                   <span className="account-cooldown-timer">
-                    available again in <strong>{formatCooldown(remainingMs)}</strong>
+                    {t('account.availableAgainIn', { time: formatCooldown(remainingMs) })}
                   </span>
                 )}
               </div>
@@ -267,14 +265,14 @@ export default function AccountDialog({ isOpen, onClose, auth, pendingRun = null
 
             <div className="modal-actions">
               <button type="button" className="secondary-button" onClick={handleSignOut}>
-                Sign out
+                {t('account.signOut')}
               </button>
             </div>
           </div>
         ) : (
           <form className="account-form" onSubmit={handleSubmit}>
             <label>
-              Username
+              {t('account.username')}
               <input
                 type="text"
                 value={username}
@@ -284,7 +282,7 @@ export default function AccountDialog({ isOpen, onClose, auth, pendingRun = null
                   setUsername(event.target.value)
                   setError('')
                 }}
-                placeholder="letters, numbers, dots or underscores"
+                placeholder={t('account.usernamePlaceholder')}
               />
             </label>
 
@@ -298,29 +296,26 @@ export default function AccountDialog({ isOpen, onClose, auth, pendingRun = null
                  have the same one. Which of the two a player is looking at is the whole
                  difference between the two sentences. */
               <p className="settings-note">
-                Your username is always lowercase, so it is one name with one spelling, and nobody
-                else can take it. Your display name keeps the capitalisation you type, and another
-                player can have the same display name as you -- your username is what tells your
-                runs apart. You can change your display name later; your username is yours for good.
+                {t('account.usernameNote')}
               </p>
             )}
 
             {isSignUp && (
               <label>
-                Display name
+                {t('account.displayName')}
                 <input
                   type="text"
                   value={displayName}
                   autoComplete="nickname"
                   maxLength={40}
                   onChange={(event) => setDisplayName(event.target.value)}
-                  placeholder="optional, shown on the leaderboard"
+                  placeholder={t('account.displayNamePlaceholderLong')}
                 />
               </label>
             )}
 
             <label>
-              Password
+              {t('account.password')}
               <input
                 type="password"
                 value={password}
@@ -330,14 +325,13 @@ export default function AccountDialog({ isOpen, onClose, auth, pendingRun = null
                   setPassword(event.target.value)
                   setError('')
                 }}
-                placeholder={isSignUp ? `at least ${MIN_PASSWORD_LENGTH} characters` : ''}
+                placeholder={isSignUp ? t('account.passwordPlaceholder', { count: MIN_PASSWORD_LENGTH }) : ''}
               />
             </label>
 
             {isSignUp && (
               <p className="settings-hint">
-                Your password is hashed on the server and never stored in readable form. The
-                session is a token in this browser only, so there is no email address to lose.
+                {t('account.passwordHint')}
               </p>
             )}
 
@@ -347,8 +341,9 @@ export default function AccountDialog({ isOpen, onClose, auth, pendingRun = null
                  the account being signed in to -- the wording makes that plain
                  before they type their password, not after. */
               <p className="settings-hint">
-                This run is saved to <strong>@{username.trim() || 'your account'}</strong> when
-                you sign in, so it is here on any device you use.
+                {t('account.runSavedTo', {
+                  username: username.trim() || t('results.yourAccountFallback'),
+                })}
               </p>
             )}
 
@@ -356,7 +351,7 @@ export default function AccountDialog({ isOpen, onClose, auth, pendingRun = null
 
             <div className="modal-actions">
               <button type="submit" className="primary-button" disabled={!canSubmit}>
-                {isBusy ? 'Working...' : isSignUp ? 'Create account' : 'Sign in'}
+                {isBusy ? t('account.working') : isSignUp ? t('account.createAccount') : t('account.signIn')}
               </button>
               <button
                 type="button"
@@ -366,7 +361,7 @@ export default function AccountDialog({ isOpen, onClose, auth, pendingRun = null
                   setError('')
                 }}
               >
-                {isSignUp ? 'I already have an account' : 'Create an account'}
+                {isSignUp ? t('account.alreadyHave') : t('account.createAccount')}
               </button>
             </div>
           </form>

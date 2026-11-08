@@ -1,14 +1,14 @@
 import { useEffect, useRef } from 'react'
 import { CHANGELOG, LATEST_VERSION } from '../data/changelog'
 import { playableVersions, versionUrl } from '../data/versions'
-
-const NEW_BADGE = 'New'
+import { useTranslate } from '../i18n/useTranslate.js'
 
 /**
  * The site history dialog. Opened from the main menu, and closable with Escape,
  * a click on the backdrop, or the close button.
  */
 export default function ChangelogDialog({ isOpen, onClose }) {
+  const { t } = useTranslate()
   const closeRef = useRef(null)
 
   useEffect(() => {
@@ -40,8 +40,8 @@ export default function ChangelogDialog({ isOpen, onClose }) {
       >
         <div className="changelog-head">
           <div>
-            <p className="eyebrow">Changelog</p>
-            <h2 id="changelog-title">What's new in {LATEST_VERSION}</h2>
+            <p className="eyebrow">{t('changelog.eyebrow')}</p>
+            <h2 id="changelog-title">{t('changelog.title', { version: LATEST_VERSION })}</h2>
           </div>
           <button
             ref={closeRef}
@@ -49,7 +49,7 @@ export default function ChangelogDialog({ isOpen, onClose }) {
             className="secondary-button changelog-close"
             onClick={onClose}
           >
-            Close
+            {t('common.close')}
           </button>
         </div>
 
@@ -69,7 +69,7 @@ export default function ChangelogDialog({ isOpen, onClose }) {
               <section key={release.id} className="changelog-entry">
                 <div className="changelog-entry-head">
                   <span className="changelog-version">{release.version}</span>
-                  {isLive && <span className="changelog-new">{NEW_BADGE}</span>}
+                  {isLive && <span className="changelog-new">{t('changelog.new')}</span>}
                   {!isLive && hasBuild && (
                     <a
                       className="changelog-play"
@@ -77,11 +77,11 @@ export default function ChangelogDialog({ isOpen, onClose }) {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      Play this version
+                      {t('changelog.play')}
                     </a>
                   )}
                   {!isLive && !hasBuild && (
-                    <span className="changelog-play changelog-play-missing">Not available</span>
+                    <span className="changelog-play changelog-play-missing">{t('changelog.notAvailable')}</span>
                   )}
                 </div>
                 <h3>{release.title}</h3>
@@ -93,8 +93,7 @@ export default function ChangelogDialog({ isOpen, onClose }) {
                 </ul>
                 {oldVersionUrl && (
                   <p className="changelog-play-note">
-                    Opens in a new tab at a frozen copy of {release.version}. Nothing you
-                    do there touches the current site.
+                    {t('changelog.playNote', { version: release.version })}
                   </p>
                 )}
               </section>
@@ -103,7 +102,7 @@ export default function ChangelogDialog({ isOpen, onClose }) {
         </div>
 
         <p className="changelog-foot">
-          Everything here is stored in your browser; no account and nothing is sent anywhere.
+          {t('changelog.foot')}
         </p>
       </div>
     </div>
