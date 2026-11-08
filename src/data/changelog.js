@@ -15,6 +15,19 @@
 export const SITE_NAME = 'GD List Roulette'
 export const CHANGELOG = [
   {
+    id: 'v2-8',
+    version: 'v2.8',
+    title: 'Profiles and leaderboards, on every screen size',
+    summary: 'Profiles and both leaderboards now match the rest of the site, and the whole layout fits phones, foldables, and tablets.',
+    changes: [
+      'A profile now has a gradient mark beside the name, stat tiles for followers, following, accepted runs, and the join date, and each accepted run is its own card.',
+      'Leaderboard rows use the same cards. The percent sits in a chip so the score is the first thing you see, on your own runs and on the global board.',
+      'The layout reflows instead of scrolling sideways. It fits a flip-phone cover, a regular phone, a fold or Duo opened flat, and an iPad, with buttons tall enough to tap.',
+      'Notched phones keep the page inside the safe area, so the header is not hidden under the clock or the home indicator.',
+      'v2.7 is preserved as a frozen build under versions/v2.7. Like the older archives it remains playable, but it cannot sign in, submit runs, or reach the leaderboard.',
+    ],
+  },
+  {
     id: 'v2-7',
     version: 'v2.7',
     title: 'The site now speaks five languages',
